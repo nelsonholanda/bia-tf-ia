@@ -1,0 +1,146 @@
+name: Main Terraform Workflow
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: 'Environment to deploy (dev or prod)'
+      terraform_action:
+        required: true
+        type: string
+        description: 'Terraform action to perform (plan or apply)'
+      aws_region:
+        required: false
+        type: string
+        default: 'us-east-1'
+        description: 'AWS region'
+    secrets:
+      AWS_ACCOUNT_ID:
+        required: true
+        description: 'AWS Account ID for role assumption'
+
+env:
+  TF_VERSION: '1.5.0'
+  AWS_REGION: ${{ inputs.aws_region }}
+  ENVIRONMENT: ${{ inputs.environment }}
+
+jobs:
+  terraform:
+    name: Terraform ${{ inputs.terraform_action }} - ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: terraform
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Configure AWS credentials using OIDC
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GIT_ACTIONS
+        role-session-name: GitHubActions-${{ inputs.environment }}-${{ github.run_id }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Terraform Format Check
+      run: terraform fmt -check -recursive
+
+    - name: Terraform Init
+      run: terraform init -backend-config="backend-${{ inputs.environment }}.hcl"
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Run Tests
+      run: ./test.sh
+
+    - name: Check if environment exists
+      id: check_env
+      run: |
+        if terraform workspace list | grep -q "${{ inputs.environment }}"; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+        
+        # Check if resources exist in state
+        if terraform state list 2>/dev/null | grep -q "module.vpc.aws_vpc.main"; then
+          echo "resources_exist=true" >> $GITHUB_OUTPUT
+        else
+          echo "resources_exist=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Terraform Plan
+      id: plan
+      run: |
+        terraform plan -var="environment=${{ inputs.environment }}" -out=tfplan-${{ inputs.environment }} -detailed-exitcode
+      continue-on-error: true
+
+    - name: Update Pull Request
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      env:
+        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+      with:
+        script: |
+          const output = `#### Terraform Plan 📖 \`${{ inputs.environment }}\`
+          
+          <details><summary>Show Plan</summary>
+          
+          \`\`\`\n
+          ${process.env.PLAN}
+          \`\`\`
+          
+          </details>
+          
+          *Environment exists: ${{ steps.check_env.outputs.exists }}*
+          *Resources exist: ${{ steps.check_env.outputs.resources_exist }}*
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Terraform Plan Status
+      if: steps.plan.outcome == 'failure'
+      run: exit 1
+
+    - name: Terraform Apply
+      if: inputs.terraform_action == 'apply' && github.event_name == 'push'
+      run: |
+        if [ -f "tfplan-${{ inputs.environment }}" ]; then
+          terraform apply tfplan-${{ inputs.environment }}
+        else
+          terraform apply -var="environment=${{ inputs.environment }}" -auto-approve
+        fi
+
+    - name: Validate Deployment
+      if: inputs.terraform_action == 'apply' && github.event_name == 'push'
+      run: ./validate.sh ${{ inputs.environment }}
+
+    - name: Environment Status
+      if: inputs.terraform_action == 'apply' && github.event_name == 'push'
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ✅ Successfully deployed" >> $GITHUB_STEP_SUMMARY
+        echo "- **Resources**: $(terraform state list | wc -l) resources managed" >> $GITHUB_STEP_SUMMARY
+        
+        # Get ALB DNS name if available
+        ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "Not available")
+        echo "- **ALB URL**: $ALB_DNS" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,36 @@
+name: Terraform Production Environment
+
+on:
+  push:
+    branches: [ bia-v1 ]
+    paths:
+      - 'terraform/**'
+  pull_request:
+    branches: [ bia-v1 ]
+    paths:
+      - 'terraform/**'
+  workflow_dispatch:
+
+jobs:
+  terraform-plan:
+    name: Plan Production Environment
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/main.yml
+    with:
+      environment: 'prod'
+      terraform_action: 'plan'
+      aws_region: 'us-east-1'
+    secrets:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+  terraform-apply:
+    name: Deploy Production Environment
+    if: github.ref == 'refs/heads/bia-v1' && github.event_name == 'push'
+    environment: production
+    uses: ./.github/workflows/main.yml
+    with:
+      environment: 'prod'
+      terraform_action: 'apply'
+      aws_region: 'us-east-1'
+    secrets:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}

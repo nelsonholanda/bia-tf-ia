@@ -18,7 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     permissions:
-      id-token: write
       contents: read
     defaults:
       run:
@@ -33,11 +32,11 @@ jobs:
       with:
         terraform_version: ${{ env.TF_VERSION }}
 
-    - name: Configure AWS credentials using OIDC
+    - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::194722426008:role/GIT_ACTIONS
-        role-session-name: GitHubActions-Prod-Deploy-${{ github.run_id }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Terraform Format Check

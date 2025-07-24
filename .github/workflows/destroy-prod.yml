@@ -89,7 +89,7 @@ jobs:
       if: steps.check_state.outputs.no_resources != 'true'
       run: |
         echo "## 🗑️ Destroy Plan - Production Environment" >> $GITHUB_STEP_SUMMARY
-        terraform plan -destroy -var="environment=prod" -out=destroy-plan-prod
+        echo "Using custom destroy script for ordered resource destruction" >> $GITHUB_STEP_SUMMARY
 
     - name: Terraform Destroy
       if: steps.check_state.outputs.no_resources != 'true'
@@ -97,7 +97,9 @@ jobs:
         echo "## 🚨 Executing Destroy - Production Environment" >> $GITHUB_STEP_SUMMARY
         echo "Starting infrastructure destruction for production environment..." >> $GITHUB_STEP_SUMMARY
         
-        terraform apply destroy-plan-prod
+        # Use script personalizado para destruição ordenada
+        chmod +x destroy.sh
+        ./destroy.sh prod
         
         echo "✅ Production infrastructure successfully destroyed" >> $GITHUB_STEP_SUMMARY
 

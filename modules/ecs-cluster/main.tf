@@ -124,7 +124,14 @@ resource "aws_ecs_capacity_provider" "main" {
     }
   }
 
+  depends_on = [aws_autoscaling_group.ecs]
+
   tags = var.tags
+
+  lifecycle {
+    prevent_destroy = false
+    create_before_destroy = false
+  }
 }
 
 # Associate Capacity Provider with Cluster
@@ -139,7 +146,10 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
     capacity_provider = aws_ecs_capacity_provider.main.name
   }
 
+  depends_on = [aws_ecs_capacity_provider.main, aws_ecs_cluster.main]
+
   lifecycle {
     prevent_destroy = false
+    create_before_destroy = false
   }
 }

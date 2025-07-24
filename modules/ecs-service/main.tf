@@ -79,6 +79,7 @@ resource "aws_ecs_service" "main" {
 
   lifecycle {
     prevent_destroy = false
+    create_before_destroy = false
   }
 }
 
@@ -91,6 +92,11 @@ resource "aws_appautoscaling_target" "ecs_target" {
   service_namespace  = "ecs"
 
   depends_on = [aws_ecs_service.main]
+
+  lifecycle {
+    prevent_destroy = false
+    create_before_destroy = false
+  }
 }
 
 # Auto Scaling Policy - Memory Utilization (Primary scaling metric)
@@ -109,5 +115,7 @@ resource "aws_appautoscaling_policy" "ecs_memory_policy" {
     scale_out_cooldown = var.env_config.memory_scale_out_cooldown
     scale_in_cooldown  = var.env_config.memory_scale_in_cooldown
   }
+
+  depends_on = [aws_appautoscaling_target.ecs_target]
 }
 

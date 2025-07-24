@@ -95,6 +95,12 @@ module "ecs_cluster" {
   security_group_id    = module.security_groups.ecs_security_group_id
   instance_profile_arn = module.iam.ecs_instance_profile_arn
   key_name             = var.key_name
+
+  depends_on = [
+    module.vpc,
+    module.security_groups,
+    module.iam
+  ]
 }
 
 # ECS Service Module
@@ -119,4 +125,11 @@ module "ecs_service" {
   target_group_arn             = module.alb.target_group_arn
 
   environment_variables = var.environment_variables
+
+  depends_on = [
+    module.ecs_cluster,
+    module.alb,
+    module.iam,
+    module.cloudwatch
+  ]
 }

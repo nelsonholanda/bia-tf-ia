@@ -42,7 +42,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: terraform
+        working-directory: .
     
     steps:
     - name: Checkout

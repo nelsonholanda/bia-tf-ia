@@ -4,7 +4,9 @@ on:
   push:
     branches: [ prod ]
     paths:
-      - 'terraform/**'
+      - '*.tf'
+      - '*.hcl'
+      - 'modules/**'
       - '.github/workflows/**'
 
 env:
@@ -21,7 +23,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: terraform
+        working-directory: .
     
     steps:
     - name: Checkout

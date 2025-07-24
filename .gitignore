@@ -74,8 +74,8 @@ terraform.tfvars.prod
 # backend-dev.hcl
 # backend-prod.hcl
 
-#KIRO IDE
-.kiro
+# KIRO IDE
+.kiro/
 .kiroignore
 .kiro/*
 

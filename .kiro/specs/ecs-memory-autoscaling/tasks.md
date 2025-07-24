@@ -48,14 +48,14 @@
   - Validate maximum capacity is set to 10 tasks
   - _Requirements: 4.2, 4.3_
 
-- [ ] 8. Commit and push changes to GitHub
+- [x] 8. Commit and push changes to GitHub
   - Commit all configuration changes with descriptive messages
   - Push changes to trigger GitHub Actions workflows
   - Monitor deployment pipeline for both environments
   - Verify successful deployment through GitHub Actions
   - _Requirements: 4.3, 4.4_
 
-- [ ] 9. Validate auto scaling behavior in both environments
+- [x] 9. Validate auto scaling behavior in both environments
   - Monitor CloudWatch metrics for memory utilization
   - Verify auto scaling policies are responding to memory thresholds
   - Test that cooldown periods are being respected

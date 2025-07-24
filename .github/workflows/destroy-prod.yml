@@ -1,29 +1,17 @@
-name: Terraform Destroy Infrastructure
+name: Destroy Production Environment
 
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Environment to destroy (dev or prod)'
-        required: true
-        type: choice
-        options:
-          - dev
-          - prod
       confirm_destroy:
-        description: 'Type "DESTROY" to confirm infrastructure destruction'
+        description: 'Type "DESTROY-PROD" to confirm infrastructure destruction'
         required: true
         type: string
-      aws_region:
-        description: 'AWS region'
-        required: false
-        type: string
-        default: 'us-east-1'
 
 env:
   TF_VERSION: '1.5.0'
-  AWS_REGION: ${{ inputs.aws_region }}
-  ENVIRONMENT: ${{ inputs.environment }}
+  AWS_REGION: 'us-east-1'
+  ENVIRONMENT: 'prod'
 
 jobs:
   validate-destroy:
@@ -35,22 +23,21 @@ jobs:
     - name: Validate confirmation
       id: validate
       run: |
-        if [ "${{ inputs.confirm_destroy }}" = "DESTROY" ]; then
+        if [ "${{ inputs.confirm_destroy }}" = "DESTROY-PROD" ]; then
           echo "should_destroy=true" >> $GITHUB_OUTPUT
-          echo "✅ Destroy confirmation validated"
+          echo "✅ Destroy confirmation validated for PRODUCTION environment"
         else
           echo "should_destroy=false" >> $GITHUB_OUTPUT
-          echo "❌ Invalid confirmation. You must type 'DESTROY' to confirm."
+          echo "❌ Invalid confirmation. You must type 'DESTROY-PROD' to confirm."
           exit 1
         fi
 
-  terraform-destroy:
-    name: Destroy ${{ inputs.environment }} Infrastructure
+  destroy-prod:
+    name: Destroy Production Infrastructure
     runs-on: ubuntu-latest
     needs: validate-destroy
     if: needs.validate-destroy.outputs.should_destroy == 'true'
-    environment: 
-      name: ${{ inputs.environment == 'prod' && 'production-destroy' || 'development-destroy' }}
+    environment: production-destroy
     permissions:
       id-token: write
       contents: read
@@ -71,18 +58,17 @@ jobs:
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GIT_ACTIONS
-        role-session-name: GitHubActions-Destroy-${{ inputs.environment }}-${{ github.run_id }}
+        role-session-name: GitHubActions-Prod-Destroy-${{ github.run_id }}
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Terraform Init
-      run: terraform init -backend-config="backend-${{ inputs.environment }}.hcl"
+      run: terraform init -backend-config="backend-prod.hcl"
 
     - name: Check Current State
       id: check_state
       run: |
-        echo "## 📊 Current Infrastructure State" >> $GITHUB_STEP_SUMMARY
+        echo "## 📊 Current Infrastructure State - Production" >> $GITHUB_STEP_SUMMARY
         
-        # Count resources
         RESOURCE_COUNT=$(terraform state list 2>/dev/null | wc -l || echo "0")
         echo "- **Total Resources**: $RESOURCE_COUNT" >> $GITHUB_STEP_SUMMARY
         
@@ -93,7 +79,6 @@ jobs:
           echo "no_resources=false" >> $GITHUB_OUTPUT
           echo "- **Status**: Resources found, proceeding with destroy" >> $GITHUB_STEP_SUMMARY
           
-          # List key resources
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Key Resources to be Destroyed:" >> $GITHUB_STEP_SUMMARY
           terraform state list | grep -E "(vpc|cluster|rds|alb)" | head -10 | while read resource; do
@@ -104,23 +89,23 @@ jobs:
     - name: Terraform Destroy Plan
       if: steps.check_state.outputs.no_resources != 'true'
       run: |
-        echo "## 🗑️ Destroy Plan" >> $GITHUB_STEP_SUMMARY
-        terraform plan -destroy -var="environment=${{ inputs.environment }}" -out=destroy-plan-${{ inputs.environment }}
+        echo "## 🗑️ Destroy Plan - Production Environment" >> $GITHUB_STEP_SUMMARY
+        terraform plan -destroy -var="environment=prod" -out=destroy-plan-prod
 
     - name: Terraform Destroy
       if: steps.check_state.outputs.no_resources != 'true'
       run: |
-        echo "## 🚨 Executing Destroy" >> $GITHUB_STEP_SUMMARY
-        echo "Starting infrastructure destruction for ${{ inputs.environment }} environment..." >> $GITHUB_STEP_SUMMARY
+        echo "## 🚨 Executing Destroy - Production Environment" >> $GITHUB_STEP_SUMMARY
+        echo "Starting infrastructure destruction for production environment..." >> $GITHUB_STEP_SUMMARY
         
-        terraform apply destroy-plan-${{ inputs.environment }}
+        terraform apply destroy-plan-prod
         
-        echo "✅ Infrastructure successfully destroyed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Production infrastructure successfully destroyed" >> $GITHUB_STEP_SUMMARY
 
     - name: Verify Destruction
       if: steps.check_state.outputs.no_resources != 'true'
       run: |
-        echo "## ✅ Destruction Verification" >> $GITHUB_STEP_SUMMARY
+        echo "## ✅ Destruction Verification - Production" >> $GITHUB_STEP_SUMMARY
         
         REMAINING_RESOURCES=$(terraform state list 2>/dev/null | wc -l || echo "0")
         
@@ -130,31 +115,7 @@ jobs:
         else
           echo "- **Status**: ⚠️ Some resources may still exist" >> $GITHUB_STEP_SUMMARY
           echo "- **Remaining Resources**: $REMAINING_RESOURCES" >> $GITHUB_STEP_SUMMARY
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Remaining Resources:" >> $GITHUB_STEP_SUMMARY
-          terraform state list | while read resource; do
-            echo "- $resource" >> $GITHUB_STEP_SUMMARY
-          done
         fi
-
-    - name: Cleanup State
-      if: steps.check_state.outputs.no_resources != 'true'
-      continue-on-error: true
-      run: |
-        # Optional: Clean up any remaining state if needed
-        echo "Cleanup completed"
-
-  notify-completion:
-    name: Notify Destruction Complete
-    runs-on: ubuntu-latest
-    needs: [validate-destroy, terraform-destroy]
-    if: always() && needs.validate-destroy.outputs.should_destroy == 'true'
-    steps:
-    - name: Summary
-      run: |
-        echo "## 🎯 Destruction Summary" >> $GITHUB_STEP_SUMMARY
-        echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Requested by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Status**: ${{ needs.terraform-destroy.result == 'success' && '✅ Successfully destroyed' || '❌ Destruction failed' }}" >> $GITHUB_STEP_SUMMARY
+        
+        echo "- **Destroyed by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY

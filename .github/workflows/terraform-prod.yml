@@ -2,11 +2,11 @@ name: Terraform Production Environment
 
 on:
   push:
-    branches: [ bia-v1 ]
+    branches: [ prod ]
     paths:
       - 'terraform/**'
   pull_request:
-    branches: [ bia-v1 ]
+    branches: [ prod ]
     paths:
       - 'terraform/**'
   workflow_dispatch:
@@ -25,7 +25,7 @@ jobs:
 
   terraform-apply:
     name: Deploy Production Environment
-    if: github.ref == 'refs/heads/bia-v1' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
     environment: production
     uses: ./.github/workflows/main.yml
     with:

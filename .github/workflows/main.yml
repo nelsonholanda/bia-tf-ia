@@ -10,7 +10,7 @@ on:
       terraform_action:
         required: true
         type: string
-        description: 'Terraform action to perform (plan or apply)'
+        description: 'Terraform action to perform (plan, apply, or destroy)'
       aws_region:
         required: false
         type: string
@@ -128,6 +128,11 @@ jobs:
         else
           terraform apply -var="environment=${{ inputs.environment }}" -auto-approve
         fi
+
+    - name: Terraform Destroy
+      if: inputs.terraform_action == 'destroy'
+      run: |
+        terraform destroy -var="environment=${{ inputs.environment }}" -auto-approve
 
     - name: Validate Deployment
       if: inputs.terraform_action == 'apply' && github.event_name == 'push'

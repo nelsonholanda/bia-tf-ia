@@ -1,0 +1,93 @@
+name: Manual Infrastructure Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Operation to perform'
+        required: true
+        type: choice
+        options:
+          - plan-dev
+          - apply-dev
+          - destroy-dev
+          - plan-prod
+          - apply-prod
+          - destroy-prod
+      confirm_operation:
+        description: 'Type "CONFIRM" to proceed with the operation'
+        required: true
+        type: string
+
+jobs:
+  validate-operation:
+    name: Validate Operation
+    runs-on: ubuntu-latest
+    outputs:
+      should_proceed: ${{ steps.validate.outputs.should_proceed }}
+      environment: ${{ steps.validate.outputs.environment }}
+      action: ${{ steps.validate.outputs.action }}
+    steps:
+    - name: Validate confirmation
+      id: validate
+      run: |
+        if [ "${{ inputs.confirm_operation }}" != "CONFIRM" ]; then
+          echo "❌ Invalid confirmation. You must type 'CONFIRM' to proceed."
+          exit 1
+        fi
+        
+        echo "should_proceed=true" >> $GITHUB_OUTPUT
+        
+        # Parse operation
+        case "${{ inputs.operation }}" in
+          *-dev)
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            ;;
+          *-prod)
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            ;;
+        esac
+        
+        case "${{ inputs.operation }}" in
+          plan-*)
+            echo "action=plan" >> $GITHUB_OUTPUT
+            ;;
+          apply-*)
+            echo "action=apply" >> $GITHUB_OUTPUT
+            ;;
+          destroy-*)
+            echo "action=destroy" >> $GITHUB_OUTPUT
+            ;;
+        esac
+        
+        echo "✅ Operation validated: ${{ inputs.operation }}"
+
+  execute-operation:
+    name: Execute ${{ inputs.operation }}
+    needs: validate-operation
+    if: needs.validate-operation.outputs.should_proceed == 'true'
+    environment: 
+      name: ${{ needs.validate-operation.outputs.environment == 'prod' && (needs.validate-operation.outputs.action == 'destroy' && 'production-destroy' || 'production') || 'development' }}
+    uses: ./.github/workflows/main.yml
+    with:
+      environment: ${{ needs.validate-operation.outputs.environment }}
+      terraform_action: ${{ needs.validate-operation.outputs.action }}
+      aws_region: 'us-east-1'
+    secrets:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+  operation-summary:
+    name: Operation Summary
+    runs-on: ubuntu-latest
+    needs: [validate-operation, execute-operation]
+    if: always()
+    steps:
+    - name: Summary
+      run: |
+        echo "## 🎯 Manual Operation Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Operation**: ${{ inputs.operation }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ needs.validate-operation.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Action**: ${{ needs.validate-operation.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Requested by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ needs.execute-operation.result == 'success' && '✅ Success' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY

@@ -74,5 +74,10 @@ terraform.tfvars.prod
 # backend-dev.hcl
 # backend-prod.hcl
 
+#KIRO IDE
+.kiro
+.kiroignore
+.kiro/*
+
 # Ignore import scripts (may contain sensitive data)
 import-*.sh

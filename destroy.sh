@@ -18,7 +18,7 @@ fi
 
 # Inicializar Terraform
 echo "🔧 Inicializando Terraform..."
-terraform init -backend-config="$BACKEND_CONFIG"
+terraform init -backend-config="$BACKEND_CONFIG" -reconfigure
 
 # Verificar se há recursos para destruir
 echo "📊 Verificando recursos existentes..."

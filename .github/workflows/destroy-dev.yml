@@ -60,7 +60,7 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Terraform Init
-      run: terraform init -backend-config="backend-dev.hcl"
+      run: terraform init -backend-config="backend-dev.hcl" -reconfigure
 
     - name: Check Current State
       id: check_state

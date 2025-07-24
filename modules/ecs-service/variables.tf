@@ -11,7 +11,7 @@ variable "tags" {
 
 variable "env_config" {
   description = "Environment-specific configuration"
-  type = any
+  type        = any
 }
 
 variable "cluster_id" {

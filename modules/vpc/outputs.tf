@@ -18,7 +18,7 @@ output "ecs_subnet_ids" {
     aws_subnet.private_1a.id,
     aws_subnet.private_1c.id,
     aws_subnet.private_1f.id
-  ] : [
+    ] : [
     aws_subnet.public_1a.id,
     aws_subnet.public_1c.id,
     aws_subnet.public_1f.id

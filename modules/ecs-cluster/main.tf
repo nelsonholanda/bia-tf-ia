@@ -68,12 +68,12 @@ resource "aws_launch_template" "ecs" {
 
 # Auto Scaling Group
 resource "aws_autoscaling_group" "ecs" {
-  name                = "bia-${var.environment}-asg"
-  vpc_zone_identifier = var.subnet_ids
-  min_size            = var.env_config.min_capacity
-  max_size            = var.env_config.max_capacity
-  desired_capacity    = var.env_config.desired_capacity
-  health_check_type   = "EC2"
+  name                  = "bia-${var.environment}-asg"
+  vpc_zone_identifier   = var.subnet_ids
+  min_size              = var.env_config.min_capacity
+  max_size              = var.env_config.max_capacity
+  desired_capacity      = var.env_config.desired_capacity
+  health_check_type     = "EC2"
   protect_from_scale_in = true
 
   launch_template {
@@ -129,7 +129,7 @@ resource "aws_ecs_capacity_provider" "main" {
   tags = var.tags
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy       = false
     create_before_destroy = false
   }
 }
@@ -149,7 +149,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
   depends_on = [aws_ecs_capacity_provider.main, aws_ecs_cluster.main]
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy       = false
     create_before_destroy = false
   }
 }

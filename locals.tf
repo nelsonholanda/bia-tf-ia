@@ -5,36 +5,36 @@ locals {
   # Environment-specific configurations
   env_config = {
     dev = {
-      instance_type               = "t3.micro"
-      rds_instance_class          = "db.t3.micro"
-      container_cpu               = 1024
-      container_memory            = 307
-      multi_az                    = false
-      backup_retention_period     = 1
-      min_capacity                = 1
-      max_capacity                = 10
-      desired_capacity            = 1
-      memory_scale_target         = 80.0
-      memory_scale_out_cooldown   = 300
-      memory_scale_in_cooldown    = 600
-      use_private_subnets         = false
-      create_nat_gateway          = false
+      instance_type             = "t3.micro"
+      rds_instance_class        = "db.t3.micro"
+      container_cpu             = 1024
+      container_memory          = 307
+      multi_az                  = false
+      backup_retention_period   = 1
+      min_capacity              = 1
+      max_capacity              = 10
+      desired_capacity          = 1
+      memory_scale_target       = 80.0
+      memory_scale_out_cooldown = 300
+      memory_scale_in_cooldown  = 600
+      use_private_subnets       = false
+      create_nat_gateway        = false
     }
     prod = {
-      instance_type               = "t3.micro"
-      rds_instance_class          = "db.t3.micro"
-      container_cpu               = 1024
-      container_memory            = 307
-      multi_az                    = false
-      backup_retention_period     = 7
-      min_capacity                = 1
-      max_capacity                = 10
-      desired_capacity            = 1
-      memory_scale_target         = 75.0
-      memory_scale_out_cooldown   = 300
-      memory_scale_in_cooldown    = 600
-      use_private_subnets         = true
-      create_nat_gateway          = true
+      instance_type             = "t3.micro"
+      rds_instance_class        = "db.t3.micro"
+      container_cpu             = 1024
+      container_memory          = 307
+      multi_az                  = false
+      backup_retention_period   = 7
+      min_capacity              = 1
+      max_capacity              = 10
+      desired_capacity          = 1
+      memory_scale_target       = 75.0
+      memory_scale_out_cooldown = 300
+      memory_scale_in_cooldown  = 600
+      use_private_subnets       = true
+      create_nat_gateway        = true
     }
   }
 

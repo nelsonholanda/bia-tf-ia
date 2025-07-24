@@ -78,7 +78,7 @@ resource "aws_ecs_service" "main" {
   depends_on = [var.target_group_arn]
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy       = false
     create_before_destroy = false
   }
 }
@@ -94,7 +94,7 @@ resource "aws_appautoscaling_target" "ecs_target" {
   depends_on = [aws_ecs_service.main]
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy       = false
     create_before_destroy = false
   }
 }

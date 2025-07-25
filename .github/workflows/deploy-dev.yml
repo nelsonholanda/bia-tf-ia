@@ -1,28 +1,18 @@
-name: Deploy Dev Environment
+name: Deploy Development
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ main ]
     paths:
-      - '*.tf'
-      - '*.hcl'
+      - '**.tf'
+      - '**.hcl'
       - 'modules/**'
-      - '.github/workflows/**'
-
-env:
-  TF_VERSION: '1.5.0'
-  AWS_REGION: 'us-east-1'
-  ENVIRONMENT: 'dev'
+  workflow_dispatch:
 
 jobs:
-  deploy-dev:
-    name: Deploy to Development
+  deploy:
+    name: Deploy to Dev
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: .
     
     steps:
     - name: Checkout
@@ -31,44 +21,20 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: ${{ env.TF_VERSION }}
+        terraform_version: 1.5.0
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Terraform Format Check
-      run: terraform fmt -check -recursive
+        aws-region: us-east-1
 
     - name: Terraform Init
-      run: terraform init -backend-config="backend-dev.hcl" -reconfigure
-
-    - name: Terraform Validate
-      run: terraform validate
+      run: terraform init -backend-config=backend-dev.hcl
 
     - name: Terraform Plan
-      run: |
-        terraform plan -var="environment=dev" -out=tfplan-dev
-        echo "## 📋 Terraform Plan - Dev Environment" >> $GITHUB_STEP_SUMMARY
-        echo "Plan generated successfully for development environment" >> $GITHUB_STEP_SUMMARY
+      run: terraform plan -var="environment=dev"
 
     - name: Terraform Apply
-      run: |
-        terraform apply tfplan-dev
-        echo "## ✅ Deployment Complete - Dev Environment" >> $GITHUB_STEP_SUMMARY
-        echo "- **Environment**: Development" >> $GITHUB_STEP_SUMMARY
-        echo "- **Status**: Successfully deployed" >> $GITHUB_STEP_SUMMARY
-        echo "- **Triggered by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-
-    - name: Get Outputs
-      run: |
-        echo "## 🔗 Environment Information" >> $GITHUB_STEP_SUMMARY
-        ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "Not available")
-        CLUSTER_ARN=$(terraform output -raw cluster_arn 2>/dev/null || echo "Not available")
-        echo "- **ALB DNS**: $ALB_DNS" >> $GITHUB_STEP_SUMMARY
-        echo "- **ECS Cluster**: $CLUSTER_ARN" >> $GITHUB_STEP_SUMMARY
-        echo "- **Resources**: $(terraform state list | wc -l) managed resources" >> $GITHUB_STEP_SUMMARY
+      run: terraform apply -var="environment=dev" -auto-approve

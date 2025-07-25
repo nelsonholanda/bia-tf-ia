@@ -8,11 +8,6 @@ on:
       - '**.hcl'
       - 'modules/**'
   workflow_dispatch:
-    inputs:
-      confirm:
-        description: 'Type "DEPLOY-PROD" to confirm'
-        required: true
-        type: string
 
 jobs:
   deploy:
@@ -20,12 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Validate confirmation
-      if: github.event.inputs.confirm != 'DEPLOY-PROD'
-      run: |
-        echo "❌ Deployment cancelled. You must type 'DEPLOY-PROD' to confirm."
-        exit 1
-
     - name: Checkout
       uses: actions/checkout@v4
 

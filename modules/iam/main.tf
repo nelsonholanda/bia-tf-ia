@@ -91,7 +91,8 @@ resource "aws_iam_policy" "ecs_secrets_policy" {
           "secretsmanager:GetSecretValue"
         ]
         Resource = [
-          "arn:aws:secretsmanager:*:*:secret:bia/${var.environment}/*"
+          "arn:aws:secretsmanager:*:*:secret:bia-${var.environment}-*",
+          "arn:aws:secretsmanager:*:*:secret:rds-db-credentials/bia-${var.environment}-*"
         ]
       }
     ]

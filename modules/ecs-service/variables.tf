@@ -74,15 +74,6 @@ variable "target_group_arn" {
   type        = string
 }
 
-variable "parameter_store_paths" {
-  description = "Parameter Store paths for database configuration"
-  type = object({
-    rds_endpoint = string
-    db_port      = string
-    db_user      = string
-  })
-}
-
 variable "db_password_secret_arn" {
   description = "ARN of the database password secret in Secrets Manager"
   type        = string

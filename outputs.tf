@@ -92,7 +92,3 @@ output "db_password_secret_name" {
   value       = module.rds.db_password_secret_name
 }
 
-output "parameter_store_paths" {
-  description = "Parameter Store paths for database configuration"
-  value       = module.secrets.parameter_store_paths
-}

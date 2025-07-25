@@ -29,19 +29,23 @@ resource "aws_ecs_task_definition" "main" {
       secrets = [
         {
           name      = "DB_HOST"
-          valueFrom = var.parameter_store_paths.rds_endpoint
+          valueFrom = "${var.db_password_secret_arn}:host::"
         },
         {
           name      = "DB_PORT"
-          valueFrom = var.parameter_store_paths.db_port
+          valueFrom = "${var.db_password_secret_arn}:port::"
         },
         {
           name      = "DB_USER"
-          valueFrom = var.parameter_store_paths.db_user
+          valueFrom = "${var.db_password_secret_arn}:username::"
         },
         {
           name      = "DB_PWD"
-          valueFrom = var.db_password_secret_arn
+          valueFrom = "${var.db_password_secret_arn}:password::"
+        },
+        {
+          name      = "DB_NAME"
+          valueFrom = "${var.db_password_secret_arn}:dbname::"
         }
       ]
 

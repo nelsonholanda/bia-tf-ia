@@ -1,17 +1,16 @@
 #!/bin/bash
 
 # Script para configurar secrets iniciais
-# Usage: ./setup-secrets.sh <environment> <db_password>
+# Usage: ./setup-secrets.sh <environment>
 
 set -e
 
 ENVIRONMENT=${1:-dev}
-DB_PASSWORD=${2}
 
-if [ -z "$DB_PASSWORD" ]; then
-    echo "❌ Erro: Senha do banco é obrigatória"
-    echo "Usage: $0 <environment> <db_password>"
-    echo "Example: $0 dev mySecurePassword123"
+if [ -z "$ENVIRONMENT" ]; then
+    echo "❌ Erro: Ambiente é obrigatório"
+    echo "Usage: $0 <environment>"
+    echo "Example: $0 dev"
     exit 1
 fi
 
@@ -25,18 +24,15 @@ fi
 
 # Aplicar Terraform com a nova senha
 echo "📦 Aplicando Terraform com secrets..."
-terraform apply -var="environment=$ENVIRONMENT" -var="db_password=$DB_PASSWORD" -auto-approve
+terraform apply -var="environment=$ENVIRONMENT" -auto-approve
 
 echo "✅ Secrets configurados com sucesso!"
 echo ""
 echo "📋 Recursos criados:"
-echo "   - Secret Manager: bia-$ENVIRONMENT-db-password"
-echo "   - Parameter Store: rdsendpoint$ENVIRONMENT"
-echo "   - Parameter Store: portdb"
-echo "   - Parameter Store: userdb"
+echo "   - Secret Manager: bia-$ENVIRONMENT-secrets"
 echo ""
 echo "🔍 Para verificar os secrets:"
-echo "   aws secretsmanager get-secret-value --secret-id bia-$ENVIRONMENT-db-password"
-echo "   aws ssm get-parameter --name rdsendpoint$ENVIRONMENT"
-echo "   aws ssm get-parameter --name portdb"
-echo "   aws ssm get-parameter --name userdb"
+echo "   aws secretsmanager get-secret-value --secret-id bia-$ENVIRONMENT-secrets"
+echo ""
+echo "🔍 Para validar a configuração:"
+echo "   aws secretsmanager get-secret-value --secret-id bia-$ENVIRONMENT-secrets"

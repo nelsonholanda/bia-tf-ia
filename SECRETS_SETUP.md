@@ -6,23 +6,30 @@ Implementação corrigida conforme especificações:
 
 ### ✅ **Implementações Realizadas:**
 
-1. **2 Secrets separados** - Criados junto com o RDS (dev e prod)
-2. **Parameter Store** - Nomes específicos: `userdb`, `portdb`, `rdsendpointdev`, `rdsendpointprod`
+1. **Secrets padronizados** - Nomenclatura `bia-{environment}-secrets`
+2. **Credenciais completas** - Todos os dados do banco em um único secret
 3. **Permissões IAM atualizadas** - Acesso aos secrets para ECS tasks
 4. **Task Definition atualizada** - Usa secrets em vez de environment variables
-5. **Deploy apenas na branch dev** - Para testes antes de produção
+5. **Scripts de validação** - Verificação automática da configuração
+6. **Correção de endpoint** - Host separado da porta corretamente
 
 ## 🏗️ **Arquitetura de Secrets**
 
-### **AWS Secrets Manager (Apenas Senha - Criado junto com RDS):**
-- `bia-dev-db-password` - Senha do banco (DEV)
-- `bia-prod-db-password` - Senha do banco (PROD)
+### **AWS Secrets Manager (Credenciais Completas do Banco):**
+- `bia-dev-secrets` - Credenciais completas do banco (DEV)
+- `bia-prod-secrets` - Credenciais completas do banco (PROD)
 
-### **AWS Parameter Store (Outras Configurações):**
-- `rdsendpointdev` - Endpoint do RDS (DEV)
-- `rdsendpointprod` - Endpoint do RDS (PROD)
-- `portdb` - Porta do banco (5432)
-- `userdb` - Usuário do banco (postgres)
+### **Estrutura do Secret:**
+```json
+{
+  "username": "postgres",
+  "password": "generated_password",
+  "engine": "postgres",
+  "host": "hostname_only",
+  "port": 5432,
+  "dbname": "bia"
+}
+```
 
 ## 🔧 **Como Configurar**
 
@@ -52,10 +59,10 @@ chmod +x setup-secrets.sh
 ### **3. Verificar Configuração:**
 
 ```bash
-# Verificar secret da senha
+# Verificar manualmente
 aws secretsmanager get-secret-value --secret-id bia-dev-db-password
 
-# Verificar parâmetros
+# Verificar parâmetros (se usando Parameter Store)
 aws ssm get-parameter --name rdsendpointdev
 aws ssm get-parameter --name portdb
 aws ssm get-parameter --name userdb
@@ -70,12 +77,12 @@ terraform apply -var="environment=dev" -var="db_password=NovaSenha123"
 
 ### **Método 2: Via AWS CLI**
 ```bash
-aws secretsmanager update-secret --secret-id bia-dev-db-password --secret-string "NovaSenha123"
+aws secretsmanager update-secret --secret-id bia-dev-secrets --secret-string "NovaSenha123"
 ```
 
 ### **Método 3: Via Console AWS**
 1. Acesse AWS Secrets Manager
-2. Encontre o secret `bia-dev-db-password`
+2. Encontre o secret `bia-dev-secrets`
 3. Clique em "Retrieve secret value"
 4. Clique em "Edit"
 5. Altere a senha
@@ -99,18 +106,29 @@ git push origin dev
 ## 📦 **Estrutura dos Módulos Atualizada**
 
 ### **Módulo RDS (`modules/rds/`):**
-- Agora cria o secret da senha junto com o banco
-- Secrets separados: `bia-dev-db-password` e `bia-prod-db-password`
-
-### **Módulo Secrets (`modules/secrets/`):**
-- Apenas Parameter Store
-- Parâmetros: `rdsendpointdev/prod`, `portdb`, `userdb`
+- Cria o secret completo junto com o banco
+- Nomenclatura padronizada: `bia-{environment}-secrets`
+- Todas as credenciais em um único secret
 
 ### **Módulo ECS Service:**
-- Task Definition usa secrets do RDS e parâmetros específicos
-- Variáveis de ambiente obtidas dinamicamente
+- Task Definition usa secrets do Secrets Manager
+- Variáveis de ambiente obtidas dinamicamente do secret
+- Suporte completo para ambos os ambientes (dev/prod)
 
 ## 🔍 **Troubleshooting**
+
+### **Problema: Host do banco contém porta (CORRIGIDO)**
+**Sintoma**: Aplicação não consegue conectar ao banco porque o endpoint vem com porta junto (ex: `host:5432`)
+
+**Solução implementada**:
+- Uso de regex para extrair apenas o hostname: `regex("^([^:]+)", aws_db_instance.bia.endpoint)[0]`
+- Validação manual através de comandos AWS CLI
+
+**Como verificar**:
+```bash
+# Verificar manualmente o secret
+aws secretsmanager get-secret-value --secret-id bia-dev-db-password | jq '.SecretString | fromjson'
+```
 
 ### **Problema: Task não consegue acessar secrets**
 ```bash
@@ -130,11 +148,34 @@ aws ssm describe-parameters
 aws ssm get-parameter --name userdb
 ```
 
+## 🔧 **Correção do Problema do Endpoint com Porta**
+
+### **Problema Identificado:**
+O endpoint do RDS estava sendo armazenado no secret com a porta incluída (ex: `hostname:5432`), causando problemas de conectividade na aplicação.
+
+### **Solução Implementada:**
+1. **Regex para extrair hostname**: `regex("^([^:]+)", aws_db_instance.bia.endpoint)[0]`
+2. **Local value para processamento**: Criado `local.db_host` para garantir consistência
+3. **Validação manual**: Comandos AWS CLI para verificar configuração
+4. **Outputs adicionais**: Para facilitar debug e monitoramento
+
+### **Como Aplicar a Correção:**
+
+```bash
+# 1. Aplicar as mudanças no Terraform
+terraform plan -var="environment=dev"
+terraform apply -var="environment=dev"
+
+# 2. Reiniciar o serviço ECS para pegar os novos secrets
+aws ecs update-service --cluster bia-dev-cluster --service bia-dev-service --force-new-deployment
+```
+
 ## 📋 **Checklist de Deploy DEV**
 
 - [ ] Aplicar Terraform na branch dev
-- [ ] Verificar criação do secret `bia-dev-db-password`
-- [ ] Verificar criação dos parâmetros: `rdsendpointdev`, `portdb`, `userdb`
+- [ ] Verificar criação do secret `bia-dev-secrets`
+- [ ] **NOVO**: Validar configuração manualmente com AWS CLI
+- [ ] Verificar que o host não contém porta (apenas hostname)
 - [ ] Testar conectividade da aplicação com o banco
 - [ ] Verificar logs do ECS para erros de autenticação
 - [ ] Validar funcionamento antes de merge para prod

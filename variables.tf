@@ -72,9 +72,3 @@ variable "key_name" {
   default     = "nholanda"
 }
 
-variable "db_password" {
-  description = "Database password (will be stored in Secrets Manager)"
-  type        = string
-  default     = "rdms95gn"
-  sensitive   = true
-}

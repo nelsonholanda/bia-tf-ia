@@ -66,13 +66,13 @@ resource "aws_launch_template" "ecs" {
   }
 }
 
-# Auto Scaling Group
+# Auto Scaling Group for EC2 Instances
 resource "aws_autoscaling_group" "ecs" {
   name                  = "bia-${var.environment}-asg"
   vpc_zone_identifier   = var.subnet_ids
-  min_size              = var.env_config.min_capacity
-  max_size              = var.env_config.max_capacity
-  desired_capacity      = var.env_config.desired_capacity
+  min_size              = var.env_config.instance_min_capacity
+  max_size              = var.env_config.instance_max_capacity
+  desired_capacity      = var.env_config.instance_desired_capacity
   health_check_type     = "EC2"
   protect_from_scale_in = true
 
@@ -151,5 +151,59 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
   lifecycle {
     prevent_destroy       = false
     create_before_destroy = false
+  }
+}
+
+# EC2 Instances Auto Scaling Policies
+resource "aws_autoscaling_policy" "scale_up" {
+  name                   = "bia-${var.environment}-scale-up"
+  scaling_adjustment     = 1
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 300
+  autoscaling_group_name = aws_autoscaling_group.ecs.name
+  policy_type            = "SimpleScaling"
+}
+
+resource "aws_autoscaling_policy" "scale_down" {
+  name                   = "bia-${var.environment}-scale-down"
+  scaling_adjustment     = -1
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 300
+  autoscaling_group_name = aws_autoscaling_group.ecs.name
+  policy_type            = "SimpleScaling"
+}
+
+# CloudWatch Alarms for EC2 Instance Scaling
+resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+  alarm_name          = "bia-${var.environment}-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "70"
+  alarm_description   = "This metric monitors ec2 cpu utilization"
+  alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
+
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.ecs.name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "cpu_low" {
+  alarm_name          = "bia-${var.environment}-cpu-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "30"
+  alarm_description   = "This metric monitors ec2 cpu utilization"
+  alarm_actions       = [aws_autoscaling_policy.scale_down.arn]
+
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.ecs.name
   }
 }

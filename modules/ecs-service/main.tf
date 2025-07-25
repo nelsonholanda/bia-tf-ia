@@ -56,7 +56,7 @@ resource "aws_ecs_service" "main" {
   name            = "bia-${var.environment}-service"
   cluster         = var.cluster_id
   task_definition = aws_ecs_task_definition.main.arn
-  desired_count   = var.env_config.desired_capacity
+  desired_count   = var.env_config.task_desired_capacity
 
   capacity_provider_strategy {
     capacity_provider = var.capacity_provider_name
@@ -83,10 +83,10 @@ resource "aws_ecs_service" "main" {
   }
 }
 
-# Auto Scaling Target
-resource "aws_appautoscaling_target" "ecs_target" {
-  max_capacity       = var.env_config.max_capacity
-  min_capacity       = var.env_config.min_capacity
+# ECS Tasks Auto Scaling Target
+resource "aws_appautoscaling_target" "ecs_tasks_target" {
+  max_capacity       = var.env_config.task_max_capacity
+  min_capacity       = var.env_config.task_min_capacity
   resource_id        = "service/bia-${var.environment}-cluster/bia-${var.environment}-service"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
@@ -99,23 +99,23 @@ resource "aws_appautoscaling_target" "ecs_target" {
   }
 }
 
-# Auto Scaling Policy - Memory Utilization (Primary scaling metric)
-resource "aws_appautoscaling_policy" "ecs_memory_policy" {
-  name               = "bia-${var.environment}-memory-autoscaling"
+# ECS Tasks Auto Scaling Policy - CPU Utilization
+resource "aws_appautoscaling_policy" "ecs_cpu_policy" {
+  name               = "bia-${var.environment}-cpu-autoscaling"
   policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
-  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+  resource_id        = aws_appautoscaling_target.ecs_tasks_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_tasks_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_tasks_target.service_namespace
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    target_value       = var.env_config.memory_scale_target
-    scale_out_cooldown = var.env_config.memory_scale_out_cooldown
-    scale_in_cooldown  = var.env_config.memory_scale_in_cooldown
+    target_value       = var.env_config.cpu_scale_target
+    scale_out_cooldown = var.env_config.cpu_scale_out_cooldown
+    scale_in_cooldown  = var.env_config.cpu_scale_in_cooldown
   }
 
-  depends_on = [aws_appautoscaling_target.ecs_target]
+  depends_on = [aws_appautoscaling_target.ecs_tasks_target]
 }
 

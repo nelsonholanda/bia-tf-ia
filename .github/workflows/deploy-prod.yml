@@ -1,6 +1,12 @@
 name: Deploy Production
 
 on:
+  push:
+    branches: [ prod ]
+    paths:
+      - '**.tf'
+      - '**.hcl'
+      - 'modules/**'
   workflow_dispatch:
     inputs:
       confirm:

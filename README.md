@@ -1,18 +1,23 @@
-# BIA ECS Infrastructure
+# 🚀 BIA ECS Infrastructure
 
 Este projeto contém a infraestrutura como código (IaC) para o sistema BIA usando Terraform na AWS com suporte a múltiplos ambientes e CI/CD automatizado.
 
-## Arquitetura
+## 📋 Documentação Completa
+
+**📖 [Manual Técnico Completo (HTML)](./DOCUMENTATION.html)** - Documentação detalhada com instruções para alterar configurações
+
+## 🏗️ Arquitetura
 
 A infraestrutura é composta por:
 
-- **VPC** com subnets públicas e privadas
-- **ECS Cluster** com Auto Scaling
-- **Application Load Balancer (ALB)**
-- **RDS PostgreSQL** para banco de dados
-- **CloudWatch** para logs
-- **IAM** roles e policies
-- **Security Groups** para controle de acesso
+- **VPC** com subnets públicas e privadas (CIDRs separados por ambiente)
+- **ECS Cluster** com Auto Scaling de instâncias EC2 (1-4 instâncias)
+- **ECS Service** com Auto Scaling de tasks (1-10 tasks, CPU 70%)
+- **Application Load Balancer (ALB)** para distribuição de tráfego
+- **RDS PostgreSQL 17.4** para banco de dados
+- **CloudWatch** para logs e monitoramento
+- **IAM** roles e policies com menor privilégio
+- **Security Groups** para controle de acesso granular
 
 ## Estrutura do Projeto
 
@@ -41,37 +46,41 @@ terraform/
     └── cloudwatch/        # Módulo CloudWatch
 ```
 
-## Estratégia de Branches
+## 🔄 Estratégia de Branches e CI/CD
 
-### Branch `dev`
-- **Propósito**: Desenvolvimento e testes
+### Branch `dev` (Homologação)
+- **Propósito**: Testes e validação
 - **Ambiente**: Desenvolvimento (dev)
-- **CI/CD**: Deploy automático em push para branch `dev`
+- **CI/CD**: Deploy **MANUAL** (requer confirmação "DEPLOY-DEV")
 - **Recursos**: Otimizado para custos, sem NAT Gateway
+- **Rede**: ECS em subnets públicas
 
-### Branch `bia-v1`
-- **Propósito**: Produção estável
+### Branch `prod` (Produção)
+- **Propósito**: Ambiente de produção
 - **Ambiente**: Produção (prod)
-- **CI/CD**: Deploy automático em push para branch `bia-v1`
+- **CI/CD**: Deploy **AUTOMÁTICO** em push para branch `prod`
 - **Recursos**: Configuração completa com NAT Gateway
+- **Rede**: ECS em subnets privadas
 
-## Ambientes
+## 🌍 Ambientes
 
 ### Desenvolvimento (dev)
-- **Instâncias**: 1-4 (mínimo 1, máximo 4, inicial 1)
-- **Rede**: ECS em subnets públicas (sem IP público para instâncias privadas)
+- **VPC CIDR**: 172.16.48.0/20
+- **EC2 Instâncias**: 1-4 (Auto Scaling baseado em CPU 70%/30%)
+- **ECS Tasks**: 1-10 (Auto Scaling baseado em CPU 70%)
+- **Rede**: ECS em subnets públicas
 - **NAT Gateway**: Não (economia de custos)
-- **Autoscaling**: CPU > 70% scale-out, < 70% scale-in
-- **RDS**: db.t3.micro, backup 1 dia
-- **Branch**: `dev`
+- **RDS**: db.t3.micro, backup 1 dia, single-AZ
+- **Deploy**: Manual com confirmação
 
 ### Produção (prod)
-- **Instâncias**: 1-4 (mínimo 1, máximo 4, inicial 1)
-- **Rede**: ECS em subnets privadas (sem IP público)
-- **NAT Gateway**: Sim (para acesso à internet das subnets privadas)
-- **Autoscaling**: CPU > 70% scale-out, < 70% scale-in
-- **RDS**: db.t3.micro, backup 7 dias
-- **Branch**: `bia-v1`
+- **VPC CIDR**: 172.16.0.0/20
+- **EC2 Instâncias**: 1-4 (Auto Scaling baseado em CPU 70%/30%)
+- **ECS Tasks**: 1-10 (Auto Scaling baseado em CPU 70%)
+- **Rede**: ECS em subnets privadas
+- **NAT Gateway**: Sim (segurança)
+- **RDS**: db.t3.micro, backup 7 dias, single-AZ
+- **Deploy**: Automático
 
 ## Como Usar
 
@@ -101,19 +110,21 @@ terraform/
 
 ### Deploy Automatizado (CI/CD)
 
-#### Para Desenvolvimento:
-1. Faça push para a branch `dev`
-2. GitHub Actions executará automaticamente:
-   - Validação do Terraform
-   - Testes automatizados
-   - Deploy no ambiente dev
+#### Para Desenvolvimento (Manual):
+1. Vá para GitHub Actions
+2. Execute workflow "Deploy Development"
+3. Digite "DEPLOY-DEV" para confirmar
+4. Aguarde conclusão do deploy
 
-#### Para Produção:
-1. Faça push para a branch `bia-v1`
+#### Para Produção (Automático):
+1. Faça push para a branch `prod`
 2. GitHub Actions executará automaticamente:
-   - Validação do Terraform
-   - Testes automatizados
-   - Deploy no ambiente prod (com aprovação manual)
+   - Terraform init, plan e apply
+   - Deploy no ambiente prod
+
+#### Para Destruir Recursos:
+- **DEV**: Execute workflow "Destroy Development" e digite "DESTROY-DEV"
+- **PROD**: Execute workflow "Destroy Production" e digite "DESTROY-PROD"
 
 ### Validação
 
@@ -132,15 +143,20 @@ terraform/
 ./test.sh
 ```
 
-## Configuração por Ambiente
+## ⚙️ Configuração por Ambiente
 
 As configurações específicas de cada ambiente estão definidas no arquivo `locals.tf`:
 
-- **Capacidade de instâncias**: min=1, max=4, desired=1
-- **Thresholds de autoscaling**: CPU 70%, Memory 75%
-- **Configurações de rede**: públicas (dev) vs privadas (prod)
-- **Recursos de banco**: diferentes períodos de backup
-- **NAT Gateway**: apenas em produção
+### Auto Scaling Separado:
+- **ECS Tasks**: 1-10 tasks, CPU 70% (independente)
+- **EC2 Instâncias**: 1-4 instâncias, CPU 70%/30% (independente)
+
+### Principais Configurações:
+- **Tipos de instância**: t3.micro para ambos ambientes
+- **RDS**: PostgreSQL 17.4, db.t3.micro
+- **Containers**: 1024 CPU units, 307-512 MB memory
+- **Rede**: CIDRs separados, NAT Gateway apenas em prod
+- **Backup**: 1 dia (dev), 7 dias (prod)
 
 ## GitHub Actions
 
@@ -200,7 +216,22 @@ Para dúvidas ou problemas:
 - Verifique os logs do GitHub Actions
 - Entre em contato com a equipe de infraestrutura
 
-## URLs dos Ambientes
+## 🔗 URLs dos Ambientes
 
-- **Dev**: `bia-dev-alb-2038579356.us-east-1.elb.amazonaws.com`
-- **Prod**: `bia-prod-alb-1188670732.us-east-1.elb.amazonaws.com`
+- **Dev**: Disponível após deploy via ALB DNS name
+- **Prod**: Disponível após deploy via ALB DNS name
+
+Use `terraform output alb_dns_name` para obter a URL atual.
+
+## 📚 Recursos Adicionais
+
+- **[Manual Técnico Completo](./DOCUMENTATION.html)** - Instruções detalhadas para configuração
+- **Módulos Terraform** - Documentação em cada diretório `modules/`
+- **GitHub Actions** - Workflows em `.github/workflows/`
+
+## 🚨 Importante
+
+- **DEV**: Deploy manual para controle de homologação
+- **PROD**: Deploy automático para agilidade em produção
+- **Auto Scaling**: Dois níveis independentes (tasks e instâncias)
+- **Segurança**: Subnets privadas em produção, públicas em dev

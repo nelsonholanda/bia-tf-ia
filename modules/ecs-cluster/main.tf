@@ -159,7 +159,7 @@ resource "aws_autoscaling_policy" "scale_up" {
   name                   = "bia-${var.environment}-scale-up"
   scaling_adjustment     = 1
   adjustment_type        = "ChangeInCapacity"
-  cooldown               = 300
+  cooldown               = 180
   autoscaling_group_name = aws_autoscaling_group.ecs.name
   policy_type            = "SimpleScaling"
 }
@@ -168,7 +168,7 @@ resource "aws_autoscaling_policy" "scale_down" {
   name                   = "bia-${var.environment}-scale-down"
   scaling_adjustment     = -1
   adjustment_type        = "ChangeInCapacity"
-  cooldown               = 300
+  cooldown               = 120
   autoscaling_group_name = aws_autoscaling_group.ecs.name
   policy_type            = "SimpleScaling"
 }

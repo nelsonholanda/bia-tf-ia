@@ -59,12 +59,7 @@ variable "db_username" {
   default     = "postgres"
 }
 
-variable "db_password" {
-  description = "Database password"
-  type        = string
-  default     = "rdms95gn"
-  sensitive   = true
-}
+
 
 variable "backup_retention_period" {
   description = "Backup retention period in days (will be overridden by env_config)"

@@ -85,3 +85,10 @@ output "security_group_ids" {
     bia_ec2 = module.security_groups.bia_ec2_sg_id
   }
 }
+
+# Secrets Outputs
+output "db_password_secret_name" {
+  description = "Name of the database password secret in Secrets Manager"
+  value       = module.rds.db_password_secret_name
+}
+

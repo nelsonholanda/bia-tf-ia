@@ -23,27 +23,27 @@ A infraestrutura é composta por:
 
 ```
 terraform/
-├── main.tf                 # Configuração principal
-├── variables.tf            # Variáveis do projeto
-├── locals.tf              # Valores locais e configurações por ambiente
-├── outputs.tf             # Outputs do Terraform
-├── deploy.sh              # Script de deploy automatizado
-├── validate.sh            # Script de validação
-├── test.sh                # Script de testes automatizados
-├── backend-dev.hcl        # Configuração do backend S3 para dev
-├── backend-prod.hcl       # Configuração do backend S3 para prod
-├── .github/workflows/     # GitHub Actions workflows
-│   ├── terraform-dev.yml  # CI/CD para ambiente dev
-│   └── terraform-prod.yml # CI/CD para ambiente prod
-└── modules/               # Módulos Terraform
-    ├── vpc/               # Módulo VPC
-    ├── ecs-cluster/       # Módulo ECS Cluster
-    ├── ecs-service/       # Módulo ECS Service
-    ├── alb/               # Módulo Application Load Balancer
-    ├── rds/               # Módulo RDS
-    ├── iam/               # Módulo IAM
-    ├── security-groups/   # Módulo Security Groups
-    └── cloudwatch/        # Módulo CloudWatch
+├── main.tf                      # Configuração principal
+├── variables.tf                 # Variáveis do projeto
+├── locals.tf                   # Valores locais e configurações por ambiente
+├── outputs.tf                  # Outputs do Terraform
+├── deploy.sh                   # Script de deploy automatizado
+├── setup-secrets.sh            # Script para configurar secrets
+├── backend-dev.hcl             # Configuração do backend S3 para dev
+├── backend-prod.hcl            # Configuração do backend S3 para prod
+├── SECRETS_SETUP.md            # Documentação detalhada dos secrets
+├── .github/workflows/          # GitHub Actions workflows
+│   ├── terraform-dev.yml       # CI/CD para ambiente dev
+│   └── terraform-prod.yml      # CI/CD para ambiente prod
+└── modules/                    # Módulos Terraform
+    ├── vpc/                    # Módulo VPC
+    ├── ecs-cluster/            # Módulo ECS Cluster
+    ├── ecs-service/            # Módulo ECS Service
+    ├── alb/                    # Módulo Application Load Balancer
+    ├── rds/                    # Módulo RDS (inclui secrets)
+    ├── iam/                    # Módulo IAM
+    ├── security-groups/        # Módulo Security Groups
+    └── cloudwatch/             # Módulo CloudWatch
 ```
 
 ## 🔄 Estratégia de Branches e CI/CD
@@ -82,6 +82,25 @@ terraform/
 - **RDS**: db.t3.micro, backup 7 dias, single-AZ
 - **Deploy**: Automático
 
+## 🔐 Gerenciamento de Secrets
+
+O projeto utiliza AWS Secrets Manager para armazenar credenciais do banco de dados com nomenclatura padronizada:
+
+- **Dev**: `bia-dev-secrets`
+- **Prod**: `bia-prod-secrets`
+
+### Estrutura do Secret
+```json
+{
+  "username": "postgres",
+  "password": "generated_password",
+  "engine": "postgres",
+  "host": "hostname_only",
+  "port": 5432,
+  "dbname": "bia"
+}
+```
+
 ## Como Usar
 
 ### Pré-requisitos
@@ -108,6 +127,14 @@ terraform/
 ./deploy.sh prod destroy
 ```
 
+### Scripts Essenciais
+
+```bash
+# Configurar secrets iniciais
+./setup-secrets.sh dev
+./setup-secrets.sh prod
+```
+
 ### Deploy Automatizado (CI/CD)
 
 #### Para Desenvolvimento (Manual):
@@ -126,21 +153,23 @@ terraform/
 - **DEV**: Execute workflow "Destroy Development" e digite "DESTROY-DEV"
 - **PROD**: Execute workflow "Destroy Production" e digite "DESTROY-PROD"
 
-### Validação
+## 🔍 Troubleshooting
 
+### Problemas Comuns
+
+#### 1. Secrets não encontrados
 ```bash
-# Validar configuração do ambiente dev
-./validate.sh dev
+# Verificar se o secret existe
+aws secretsmanager describe-secret --secret-id bia-dev-secrets
 
-# Validar configuração do ambiente prod
-./validate.sh prod
+# Recriar secrets se necessário
+./setup-secrets.sh dev
 ```
 
-### Testes
-
+#### 2. Serviço ECS não atualizado
 ```bash
-# Executar todos os testes automatizados
-./test.sh
+# Forçar nova implantação via AWS CLI
+aws ecs update-service --cluster bia-dev-cluster --service bia-dev-service --force-new-deployment
 ```
 
 ## ⚙️ Configuração por Ambiente

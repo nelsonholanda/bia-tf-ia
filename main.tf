@@ -70,6 +70,8 @@ module "rds" {
   subnet_ids         = module.vpc.private_subnet_ids
 }
 
+
+
 # ALB Module
 module "alb" {
   source = "./modules/alb"
@@ -124,12 +126,14 @@ module "ecs_service" {
   capacity_provider_name       = module.ecs_cluster.capacity_provider_name
   target_group_arn             = module.alb.target_group_arn
 
-  environment_variables = var.environment_variables
+  # Use Secrets Manager for all database credentials
+  db_password_secret_arn   = module.rds.db_password_secret_arn
 
   depends_on = [
     module.ecs_cluster,
     module.alb,
     module.iam,
-    module.cloudwatch
+    module.cloudwatch,
+    module.rds
   ]
 }

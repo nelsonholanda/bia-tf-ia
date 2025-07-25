@@ -66,6 +66,47 @@ resource "aws_iam_role_policy_attachment" "ecs_instance_ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# Custom policy for Parameter Store and Secrets Manager access
+resource "aws_iam_policy" "ecs_secrets_policy" {
+  name        = "bia-${var.environment}-ecs-secrets-policy"
+  description = "Policy for ECS tasks to access Parameter Store and Secrets Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:GetParametersByPath"
+        ]
+        Resource = [
+          "arn:aws:ssm:*:*:parameter/bia/${var.environment}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          "arn:aws:secretsmanager:*:*:secret:bia-${var.environment}-*",
+          "arn:aws:secretsmanager:*:*:secret:rds-db-credentials/bia-${var.environment}-*"
+        ]
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+# Attach custom policy to ECS task execution role
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_secrets_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = aws_iam_policy.ecs_secrets_policy.arn
+}
+
 # ECS Instance Profile
 resource "aws_iam_instance_profile" "ecs_instance_profile" {
   name = "bia-${var.environment}-ecsInstanceProfile"

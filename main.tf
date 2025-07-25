@@ -68,6 +68,19 @@ module "rds" {
   db_identifier      = "bia"
   security_group_ids = [module.security_groups.bia_rds_sg_id]
   subnet_ids         = module.vpc.private_subnet_ids
+  db_password        = var.db_password
+}
+
+# Secrets Module (Parameter Store only)
+module "secrets" {
+  source = "./modules/secrets"
+
+  environment = var.environment
+  tags        = local.common_tags
+  db_endpoint = module.rds.db_instance_endpoint
+  db_username = "postgres"
+
+  depends_on = [module.rds]
 }
 
 # ALB Module
@@ -124,12 +137,15 @@ module "ecs_service" {
   capacity_provider_name       = module.ecs_cluster.capacity_provider_name
   target_group_arn             = module.alb.target_group_arn
 
-  environment_variables = var.environment_variables
+  # Use Parameter Store and Secrets Manager
+  parameter_store_paths    = module.secrets.parameter_store_paths
+  db_password_secret_arn   = module.rds.db_password_secret_arn
 
   depends_on = [
     module.ecs_cluster,
     module.alb,
     module.iam,
-    module.cloudwatch
+    module.cloudwatch,
+    module.secrets
   ]
 }

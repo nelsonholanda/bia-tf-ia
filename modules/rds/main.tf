@@ -10,6 +10,22 @@ resource "aws_db_subnet_group" "bia" {
   })
 }
 
+# AWS Secrets Manager - Database Password (created with RDS)
+resource "aws_secretsmanager_secret" "db_password" {
+  name                    = var.environment == "dev" ? "bia-dev-db-password" : "bia-prod-db-password"
+  description             = "Database password for BIA ${var.environment} environment"
+  recovery_window_in_days = var.environment == "prod" ? 30 : 0
+
+  tags = merge(var.tags, {
+    Name = "bia-${var.environment}-db-password"
+  })
+}
+
+resource "aws_secretsmanager_secret_version" "db_password" {
+  secret_id     = aws_secretsmanager_secret.db_password.id
+  secret_string = var.db_password
+}
+
 resource "aws_db_instance" "bia" {
   identifier     = "bia-${var.environment}-db"
   engine         = "postgres"
@@ -39,4 +55,6 @@ resource "aws_db_instance" "bia" {
   tags = merge(var.tags, {
     Name = "bia-${var.environment}-db"
   })
+
+  depends_on = [aws_secretsmanager_secret_version.db_password]
 }

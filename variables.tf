@@ -72,28 +72,9 @@ variable "key_name" {
   default     = "nholanda"
 }
 
-variable "environment_variables" {
-  description = "Environment variables for the container"
-  type = list(object({
-    name  = string
-    value = string
-  }))
-  default = [
-    {
-      name  = "DB_PWD"
-      value = "rdms95gn"
-    },
-    {
-      name  = "DB_HOST"
-      value = "bia.cx4q6caas2ti.us-east-1.rds.amazonaws.com"
-    },
-    {
-      name  = "DB_PORT"
-      value = "5432"
-    },
-    {
-      name  = "DB_USER"
-      value = "postgres"
-    }
-  ]
+variable "db_password" {
+  description = "Database password (will be stored in Secrets Manager)"
+  type        = string
+  default     = "rdms95gn"
+  sensitive   = true
 }

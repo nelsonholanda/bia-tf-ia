@@ -25,7 +25,25 @@ resource "aws_ecs_task_definition" "main" {
         }
       ]
 
-      environment = var.environment_variables
+      # Use secrets from Parameter Store and Secrets Manager
+      secrets = [
+        {
+          name      = "DB_HOST"
+          valueFrom = var.parameter_store_paths.rds_endpoint
+        },
+        {
+          name      = "DB_PORT"
+          valueFrom = var.parameter_store_paths.db_port
+        },
+        {
+          name      = "DB_USER"
+          valueFrom = var.parameter_store_paths.db_user
+        },
+        {
+          name      = "DB_PWD"
+          valueFrom = var.db_password_secret_arn
+        }
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"

@@ -115,10 +115,11 @@
         <h1>🚀 BIA Infrastructure - Manual Técnico</h1>
         
         <div class="info">
-            <strong>Versão:</strong> 2.0<br>
-            <strong>Última Atualização:</strong> Janeiro 2025<br>
+            <strong>Versão:</strong> 2.1<br>
+            <strong>Última Atualização:</strong> Janeiro 2025 (Otimizada)<br>
             <strong>Autor:</strong> Nelson Holanda<br>
-            <strong>Projeto:</strong> BIA ECS Infrastructure
+            <strong>Projeto:</strong> BIA ECS Infrastructure<br>
+            <strong>Status:</strong> Estrutura Otimizada - Scripts Essenciais
         </div>
 
         <div class="toc">
@@ -126,13 +127,15 @@
             <ul>
                 <li><a href="#overview">1. Visão Geral</a></li>
                 <li><a href="#architecture">2. Arquitetura</a></li>
-                <li><a href="#environments">3. Ambientes</a></li>
-                <li><a href="#autoscaling">4. Auto Scaling</a></li>
-                <li><a href="#database">5. Banco de Dados</a></li>
-                <li><a href="#networking">6. Rede</a></li>
-                <li><a href="#cicd">7. CI/CD</a></li>
-                <li><a href="#configuration">8. Configurações</a></li>
-                <li><a href="#troubleshooting">9. Troubleshooting</a></li>
+                <li><a href="#secrets">3. Gerenciamento de Secrets</a></li>
+                <li><a href="#environments">4. Ambientes</a></li>
+                <li><a href="#autoscaling">5. Auto Scaling</a></li>
+                <li><a href="#database">6. Banco de Dados</a></li>
+                <li><a href="#networking">7. Rede</a></li>
+                <li><a href="#scripts">8. Scripts Essenciais</a></li>
+                <li><a href="#cicd">9. CI/CD</a></li>
+                <li><a href="#configuration">10. Configurações</a></li>
+                <li><a href="#troubleshooting">11. Troubleshooting</a></li>
             </ul>
         </div>
 
@@ -200,7 +203,60 @@
             </tr>
         </table>
 
-        <h2 id="environments">3. 🌍 Ambientes</h2>
+        <h2 id="secrets">3. 🔐 Gerenciamento de Secrets</h2>
+        
+        <div class="info">
+            <strong>Atualização:</strong> A nomenclatura dos secrets foi padronizada para melhor organização.
+        </div>
+
+        <h3>Nomenclatura Padronizada:</h3>
+        <table>
+            <tr>
+                <th>Ambiente</th>
+                <th>Nome do Secret</th>
+                <th>Descrição</th>
+            </tr>
+            <tr>
+                <td>Desenvolvimento</td>
+                <td><code>bia-dev-secrets</code></td>
+                <td>Credenciais completas do banco para dev</td>
+            </tr>
+            <tr>
+                <td>Produção</td>
+                <td><code>bia-prod-secrets</code></td>
+                <td>Credenciais completas do banco para prod</td>
+            </tr>
+        </table>
+
+        <h3>Estrutura do Secret:</h3>
+        <pre><code>{
+  "username": "postgres",
+  "password": "generated_password",
+  "engine": "postgres",
+  "host": "hostname_only",
+  "port": 5432,
+  "dbname": "bia"
+}</code></pre>
+
+        <div class="warning">
+            <strong>Importante:</strong> O campo "host" contém apenas o hostname do RDS, sem a porta. A porta é armazenada separadamente no campo "port".
+        </div>
+
+        <h3>Configuração de Secrets:</h3>
+        <pre><code># Configurar secrets para desenvolvimento
+./setup-secrets.sh dev
+
+# Configurar secrets para produção
+./setup-secrets.sh prod</code></pre>
+
+        <h3>Validação Manual:</h3>
+        <pre><code># Verificar secret do dev
+aws secretsmanager get-secret-value --secret-id bia-dev-secrets
+
+# Verificar secret do prod
+aws secretsmanager get-secret-value --secret-id bia-prod-secrets</code></pre>
+
+        <h2 id="environments">4. 🌍 Ambientes</h2>
         
         <h3>DEV (Homologação)</h3>
         <div class="info">
@@ -441,7 +497,58 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
   ]
 }</code></pre>
 
-        <h2 id="networking">6. 🌐 Rede</h2>
+        <h2 id="scripts">8. 📜 Scripts Essenciais</h2>
+        
+        <div class="info">
+            <strong>Otimização:</strong> O projeto foi simplificado para conter apenas os scripts essenciais para funcionamento.
+        </div>
+
+        <h3>Scripts Mantidos:</h3>
+        <table>
+            <tr>
+                <th>Script</th>
+                <th>Função</th>
+                <th>Uso</th>
+            </tr>
+            <tr>
+                <td><code>deploy.sh</code></td>
+                <td>Deploy principal do projeto</td>
+                <td><code>./deploy.sh &lt;env&gt; &lt;action&gt;</code></td>
+            </tr>
+            <tr>
+                <td><code>setup-secrets.sh</code></td>
+                <td>Configuração inicial dos secrets</td>
+                <td><code>./setup-secrets.sh &lt;env&gt;</code></td>
+            </tr>
+        </table>
+
+        <h3>Scripts Removidos (Não Essenciais):</h3>
+        <ul>
+            <li><code>fix-database-endpoint.sh</code> - Correção específica</li>
+            <li><code>update-ecs-service.sh</code> - Utilitário</li>
+            <li><code>validate-secrets.sh</code> - Validação</li>
+            <li><code>test-environment.sh</code> - Teste</li>
+            <li><code>validate-project.sh</code> - Validação</li>
+        </ul>
+
+        <div class="warning">
+            <strong>Nota:</strong> Funcionalidades dos scripts removidos podem ser executadas manualmente via AWS CLI quando necessário.
+        </div>
+
+        <h3>Exemplos de Uso:</h3>
+        <pre><code># Deploy completo ambiente dev
+./deploy.sh dev apply
+
+# Deploy completo ambiente prod
+./deploy.sh prod apply
+
+# Configurar secrets para dev
+./setup-secrets.sh dev
+
+# Configurar secrets para prod
+./setup-secrets.sh prod</code></pre>
+
+        <h2 id="networking">7. 🌐 Rede</h2>
         
         <h3>Configurações de Rede por Ambiente:</h3>
         <table>
@@ -631,7 +738,25 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
             <strong>Solução:</strong> Verificar métricas do CloudWatch e configurações de threshold.
         </div>
 
-        <h4>4. Workflow GitHub Actions Falha</h4>
+        <h4>4. Problemas com Secrets do Banco</h4>
+        <div class="warning">
+            <strong>Erro:</strong> Aplicação não consegue conectar ao banco<br>
+            <strong>Solução:</strong> Verificar se o secret existe e tem a estrutura correta:
+            <pre><code># Verificar secret
+aws secretsmanager get-secret-value --secret-id bia-dev-secrets
+
+# Recriar se necessário
+./setup-secrets.sh dev</code></pre>
+        </div>
+
+        <h4>5. Serviço ECS não Atualizado</h4>
+        <div class="warning">
+            <strong>Erro:</strong> Mudanças nos secrets não refletem na aplicação<br>
+            <strong>Solução:</strong> Forçar nova implantação do serviço:
+            <pre><code>aws ecs update-service --cluster bia-dev-cluster --service bia-dev-service --force-new-deployment</code></pre>
+        </div>
+
+        <h4>6. Workflow GitHub Actions Falha</h4>
         <div class="warning">
             <strong>Erro:</strong> Authentication failed<br>
             <strong>Solução:</strong> Verificar se os secrets AWS estão configurados corretamente.

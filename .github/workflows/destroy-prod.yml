@@ -32,7 +32,7 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: 1.5.0
+        terraform_version: 1.6.6
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -42,7 +42,7 @@ jobs:
         aws-region: us-east-1
 
     - name: Terraform Init
-      run: terraform init -backend-config=backend-prod.hcl
+      run: terraform init -reconfigure -backend-config=backend-prod.hcl
 
     - name: Terraform Destroy
       run: terraform destroy -var="environment=prod" -auto-approve

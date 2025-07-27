@@ -17,13 +17,13 @@ Este projeto implementa um pipeline CI/CD robusto para Terraform com foco em seg
 - ✅ Upload de resultados para GitHub Security tab
 
 ### 2. **Deploy Development** (`.github/workflows/deploy-dev.yml`)
-**Trigger:** Manual (workflow_dispatch) com confirmação
+**Trigger:** Manual (workflow_dispatch) com confirmação obrigatória
 
 **Funcionalidades:**
-- 🔒 Security scanning obrigatório
-- 📋 Terraform plan com artifacts
+- 🔒 Confirmação obrigatória "DEPLOY-DEV"
+- 📋 Terraform plan e apply
 - 🚀 Deploy com validação pós-deployment
-- 📊 Comentários automáticos em PRs
+- 📊 Outputs dos recursos criados
 
 ### 3. **Deploy Production** (`.github/workflows/deploy-prod.yml`)
 **Trigger:** Push para branch `prod` ou manual
@@ -193,8 +193,8 @@ aws cloudtrail lookup-events --lookup-attributes AttributeKey=ResourceName,Attri
 4. ✅ Testar em dev antes de prod
 
 ### **Deployments:**
-1. ✅ Dev: Manual com confirmação
-2. ✅ Prod: Automático após merge
+1. ✅ Dev: Manual com confirmação "DEPLOY-DEV"
+2. ✅ Prod: Automático após push para branch prod
 3. ✅ Sempre validar pós-deployment
 4. ✅ Monitorar logs e métricas
 

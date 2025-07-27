@@ -108,15 +108,15 @@ waf_web_acl_arn = "arn:aws:wafv2:us-east-1:194722426008:regional/webacl/bia-prod
 ## 🔄 Workflows GitHub Actions
 
 ### **Workflows Implementados**
-- ✅ **deploy-dev.yml**: Deploy automático para desenvolvimento
+- ✅ **deploy-dev.yml**: Deploy manual com confirmação obrigatória
 - ✅ **deploy-prod.yml**: Deploy automático para produção
 - ✅ **destroy-dev.yml**: Destroy manual com confirmação
 - ✅ **destroy-prod.yml**: Destroy manual com confirmação adicional
 
 ### **Características**
-- ✅ **Triggers Automáticos**: Push para branches dev/prod
-- ✅ **Path Filtering**: Apenas arquivos Terraform
-- ✅ **Confirmação Obrigatória**: Para operações de destroy
+- ✅ **Deploy Dev**: Manual com confirmação "DEPLOY-DEV"
+- ✅ **Deploy Prod**: Automático no push para branch prod
+- ✅ **Confirmação Obrigatória**: Para deploy dev e operações de destroy
 - ✅ **Logs Claros**: Sucesso e erro bem definidos
 
 ## 📈 Melhorias Implementadas

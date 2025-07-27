@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,29 +13,34 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             background: white;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
+
         h1 {
             color: #2c3e50;
             border-bottom: 3px solid #3498db;
             padding-bottom: 10px;
         }
+
         h2 {
             color: #34495e;
             margin-top: 30px;
             border-left: 4px solid #3498db;
             padding-left: 15px;
         }
+
         h3 {
             color: #2c3e50;
             margin-top: 25px;
         }
+
         .warning {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -42,6 +48,7 @@
             padding: 15px;
             margin: 15px 0;
         }
+
         .info {
             background: #d1ecf1;
             border: 1px solid #bee5eb;
@@ -49,6 +56,7 @@
             padding: 15px;
             margin: 15px 0;
         }
+
         .success {
             background: #d4edda;
             border: 1px solid #c3e6cb;
@@ -56,12 +64,14 @@
             padding: 15px;
             margin: 15px 0;
         }
+
         code {
             background: #f8f9fa;
             padding: 2px 6px;
             border-radius: 3px;
             font-family: 'Courier New', monospace;
         }
+
         pre {
             background: #2d3748;
             color: #e2e8f0;
@@ -70,23 +80,29 @@
             overflow-x: auto;
             margin: 15px 0;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 15px 0;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
         }
+
         th {
             background-color: #3498db;
             color: white;
         }
+
         tr:nth-child(even) {
             background-color: #f2f2f2;
         }
+
         .toc {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -94,26 +110,31 @@
             padding: 20px;
             margin: 20px 0;
         }
+
         .toc ul {
             list-style-type: none;
             padding-left: 0;
         }
+
         .toc li {
             margin: 8px 0;
         }
+
         .toc a {
             text-decoration: none;
             color: #3498db;
         }
+
         .toc a:hover {
             text-decoration: underline;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🚀 BIA Infrastructure - Manual Técnico</h1>
-        
+
         <div class="info">
             <strong>Versão:</strong> 2.2<br>
             <strong>Última Atualização:</strong> Janeiro 2025 (Estrutura Final Otimizada)<br>
@@ -140,8 +161,9 @@
         </div>
 
         <h2 id="overview">1. 🎯 Visão Geral</h2>
-        <p>Este projeto implementa a infraestrutura completa para o sistema BIA usando Terraform na AWS, com suporte a múltiplos ambientes e CI/CD automatizado.</p>
-        
+        <p>Este projeto implementa a infraestrutura completa para o sistema BIA usando Terraform na AWS, com suporte a
+            múltiplos ambientes e CI/CD automatizado.</p>
+
         <h3>Componentes Principais:</h3>
         <ul>
             <li><strong>ECS Cluster</strong> - Orquestração de containers</li>
@@ -153,7 +175,7 @@
         </ul>
 
         <h2 id="architecture">2. 🏗️ Arquitetura</h2>
-        
+
         <h3>Estrutura de Módulos:</h3>
         <table>
             <tr>
@@ -204,7 +226,7 @@
         </table>
 
         <h2 id="secrets">3. 🔐 Gerenciamento de Secrets</h2>
-        
+
         <div class="success">
             <strong>✅ Implementado:</strong> Nomenclatura padronizada e estrutura unificada dos secrets.
         </div>
@@ -242,7 +264,8 @@
 }</code></pre>
 
         <div class="warning">
-            <strong>Importante:</strong> O campo "host" contém apenas o hostname do RDS, sem a porta. A porta é armazenada separadamente no campo "port".
+            <strong>Importante:</strong> O campo "host" contém apenas o hostname do RDS, sem a porta. A porta é
+            armazenada separadamente no campo "port".
         </div>
 
         <h3>Configuração de Secrets:</h3>
@@ -260,14 +283,14 @@ aws secretsmanager get-secret-value --secret-id bia-dev-secrets
 aws secretsmanager get-secret-value --secret-id bia-prod-secrets</code></pre>
 
         <h2 id="environments">4. 🌍 Ambientes</h2>
-        
+
         <h3>DEV (Homologação)</h3>
         <div class="info">
             <strong>Branch:</strong> dev<br>
             <strong>Deploy:</strong> Manual (requer confirmação)<br>
             <strong>Propósito:</strong> Testes e validação
         </div>
-        
+
         <h3>PROD (Produção)</h3>
         <div class="success">
             <strong>Branch:</strong> prod<br>
@@ -276,14 +299,14 @@ aws secretsmanager get-secret-value --secret-id bia-prod-secrets</code></pre>
         </div>
 
         <h2 id="autoscaling">4. ⚡ Auto Scaling</h2>
-        
+
         <div class="warning">
             <strong>⚠️ Importante:</strong> O auto scaling está separado em dois níveis independentes.
         </div>
 
         <h3>4.1 Auto Scaling de Tasks ECS</h3>
         <p><strong>Localização:</strong> <code>modules/ecs-service/main.tf</code></p>
-        
+
         <table>
             <tr>
                 <th>Parâmetro</th>
@@ -345,7 +368,7 @@ aws secretsmanager get-secret-value --secret-id bia-prod-secrets</code></pre>
 
         <h3>4.2 Auto Scaling de Instâncias EC2</h3>
         <p><strong>Localização:</strong> <code>modules/ecs-cluster/main.tf</code></p>
-        
+
         <table>
             <tr>
                 <th>Parâmetro</th>
@@ -408,7 +431,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
 }</code></pre>
 
         <h2 id="database">5. 🗄️ Banco de Dados</h2>
-        
+
         <h3>Configurações Atuais:</h3>
         <table>
             <tr>
@@ -450,7 +473,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
         </table>
 
         <h3>Como Alterar Configurações do RDS:</h3>
-        
+
         <h4>1. Alterar Instance Class:</h4>
         <p>Edite <code>locals.tf</code>:</p>
         <pre><code>env_config = {
@@ -501,9 +524,10 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
 }</code></pre>
 
         <h2 id="scripts">8. 📜 Scripts Essenciais</h2>
-        
+
         <div class="success">
-            <strong>✅ Otimização Completa:</strong> Projeto simplificado com apenas 2 scripts essenciais para funcionamento básico.
+            <strong>✅ Otimização Completa:</strong> Projeto simplificado com apenas 2 scripts essenciais para
+            funcionamento básico.
         </div>
 
         <h3>Scripts Mantidos (Essenciais):</h3>
@@ -563,7 +587,8 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
         </table>
 
         <div class="info">
-            <strong>Filosofia:</strong> Manter apenas o essencial para funcionamento, reduzindo complexidade e facilitando manutenção.
+            <strong>Filosofia:</strong> Manter apenas o essencial para funcionamento, reduzindo complexidade e
+            facilitando manutenção.
         </div>
 
         <h3>Exemplos de Uso dos Scripts Essenciais:</h3>
@@ -600,7 +625,7 @@ terraform show
 terraform state list</code></pre>
 
         <h2 id="networking">7. 🌐 Rede</h2>
-        
+
         <h3>Configurações de Rede por Ambiente:</h3>
         <table>
             <tr>
@@ -631,7 +656,7 @@ terraform state list</code></pre>
         </table>
 
         <h3>Como Alterar Configurações de Rede:</h3>
-        
+
         <h4>1. Alterar CIDR da VPC:</h4>
         <p>Edite <code>modules/vpc/main.tf</code>:</p>
         <pre><code>resource "aws_vpc" "main" {
@@ -661,7 +686,7 @@ terraform state list</code></pre>
 }</code></pre>
 
         <h2 id="cicd">7. 🔄 CI/CD</h2>
-        
+
         <h3>Workflows GitHub Actions:</h3>
         <table>
             <tr>
@@ -703,7 +728,7 @@ terraform state list</code></pre>
         </ul>
 
         <h2 id="configuration">8. ⚙️ Configurações</h2>
-        
+
         <h3>Arquivos de Configuração Principais:</h3>
         <table>
             <tr>
@@ -734,7 +759,7 @@ terraform state list</code></pre>
         </table>
 
         <h3>Como Alterar Configurações Comuns:</h3>
-        
+
         <h4>1. Alterar Porta da Aplicação:</h4>
         <p>Edite <code>variables.tf</code>:</p>
         <pre><code>variable "container_port" {
@@ -768,9 +793,9 @@ terraform state list</code></pre>
 }</code></pre>
 
         <h2 id="troubleshooting">9. 🔧 Troubleshooting</h2>
-        
+
         <h3>Problemas Comuns:</h3>
-        
+
         <h4>1. Deploy Falha por Falta de Recursos</h4>
         <div class="warning">
             <strong>Erro:</strong> "InsufficientCapacity" ou "ResourcesNotAvailable"<br>
@@ -851,7 +876,8 @@ terraform destroy -var="environment=dev"</code></pre>
                 <li>Configurar secrets: <code>./setup-secrets.sh &lt;env&gt;</code></li>
                 <li>Executar deploy: <code>./deploy.sh &lt;env&gt; apply</code></li>
                 <li>Verificar recursos criados na AWS</li>
-                <li>Validar secrets: <code>aws secretsmanager get-secret-value --secret-id bia-&lt;env&gt;-secrets</code></li>
+                <li>Validar secrets:
+                    <code>aws secretsmanager get-secret-value --secret-id bia-&lt;env&gt;-secrets</code></li>
                 <li>Testar aplicação via ALB DNS</li>
                 <li>Monitorar logs: CloudWatch Logs Group <code>/ecs/bia-&lt;env&gt;</code></li>
             </ol>
@@ -877,4 +903,5 @@ terraform destroy -var="environment=dev"</code></pre>
         </div>
     </div>
 </body>
+
 </html>

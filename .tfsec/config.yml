@@ -1,0 +1,59 @@
+# tfsec configuration for BIA project
+# Documentation: https://aquasecurity.github.io/tfsec/latest/guides/configuration/
+
+# Minimum severity level to report
+minimum_severity: MEDIUM
+
+# Exclude specific checks (use with caution)
+exclude:
+  # Temporarily exclude some checks that may not be applicable
+  # Remove these as security improvements are implemented
+  - aws-rds-encrypt-instance-storage-data  # Will be fixed in security phase
+  - aws-rds-no-public-db-access           # Expected for dev environment
+  - aws-ec2-no-public-egress-sgr          # Required for ECS tasks
+
+# Include specific directories
+include:
+  - "."
+  - "modules/"
+
+# Exclude directories
+exclude_paths:
+  - ".terraform/"
+  - ".git/"
+  - "*.tfvars"
+
+# Custom checks configuration
+checks:
+  # RDS specific checks
+  - check: aws-rds-backup-retention-specified
+    severity: HIGH
+  - check: aws-rds-deletion-protection
+    severity: CRITICAL
+  - check: aws-rds-encrypt-instance-storage-data
+    severity: CRITICAL
+  
+  # ECS specific checks
+  - check: aws-ecs-enable-container-insight
+    severity: MEDIUM
+  - check: aws-ecs-no-plaintext-secrets
+    severity: HIGH
+  
+  # IAM specific checks
+  - check: aws-iam-no-policy-wildcards
+    severity: HIGH
+  - check: aws-iam-enforce-mfa
+    severity: MEDIUM
+  
+  # VPC specific checks
+  - check: aws-vpc-no-excessive-port-access
+    severity: HIGH
+  - check: aws-vpc-no-public-ingress-sgr
+    severity: MEDIUM
+
+# Format configuration
+format: default
+output: stdout
+
+# Severity levels: CRITICAL, HIGH, MEDIUM, LOW
+# Only report MEDIUM and above by default

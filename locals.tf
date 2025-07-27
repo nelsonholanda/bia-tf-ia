@@ -26,25 +26,31 @@ locals {
       create_nat_gateway        = false
     }
     prod = {
-      instance_type             = "t3.micro"
-      rds_instance_class        = "db.t3.micro"
+      instance_type             = "t3.small"  # Upgraded for production
+      rds_instance_class        = "db.t3.small"  # Upgraded for production
       container_cpu             = 1024
-      container_memory          = 307
-      multi_az                  = false
-      backup_retention_period   = 7
-      # ECS Tasks Auto Scaling
-      task_min_capacity         = 1
-      task_max_capacity         = 10
-      task_desired_capacity     = 1
-      cpu_scale_target          = 70.0
-      cpu_scale_out_cooldown    = 300
-      cpu_scale_in_cooldown     = 600
+      container_memory          = 512  # Increased for production
+      multi_az                  = true  # High availability for production
+      backup_retention_period   = 30   # Extended backup retention
+      # ECS Tasks Auto Scaling - More conservative for production
+      task_min_capacity         = 2    # Minimum 2 tasks for availability
+      task_max_capacity         = 20   # Higher max for production load
+      task_desired_capacity     = 2    # Start with 2 tasks
+      cpu_scale_target          = 60.0 # Lower threshold for faster scaling
+      cpu_scale_out_cooldown    = 600  # Longer cooldown for stability
+      cpu_scale_in_cooldown     = 900  # Even longer for scale-in
       # EC2 Instances Auto Scaling
-      instance_min_capacity     = 1
-      instance_max_capacity     = 4
-      instance_desired_capacity = 1
+      instance_min_capacity     = 2    # Minimum 2 instances for availability
+      instance_max_capacity     = 6    # Higher max for production
+      instance_desired_capacity = 2    # Start with 2 instances
       use_private_subnets       = true
       create_nat_gateway        = true
+      # Production-specific settings
+      enable_container_insights = true
+      enable_deletion_protection = true
+      enable_final_snapshot     = true
+      log_retention_days        = 30
+      enable_performance_insights = true
     }
   }
 
@@ -53,10 +59,15 @@ locals {
 
   # Common tags applied to all resources
   common_tags = {
-    Environment = var.environment
-    Owner       = "Nelson Holanda"
-    Project     = "BIA"
-    ManagedBy   = "Terraform"
+    Environment   = var.environment
+    Owner        = "Nelson Holanda"
+    Project      = "BIA"
+    ManagedBy    = "Terraform"
+    CostCenter   = "Engineering"
+    Application  = "BIA"
+    Backup       = var.environment == "prod" ? "Required" : "Optional"
+    Compliance   = var.environment == "prod" ? "SOC2" : "Development"
+    DataClass    = var.environment == "prod" ? "Confidential" : "Internal"
   }
 
   # Environment-specific naming

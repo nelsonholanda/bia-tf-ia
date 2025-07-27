@@ -9,12 +9,7 @@ variable "tags" {
   default     = {}
 }
 
-variable "log_group_name" {
-  description = "CloudWatch log group name"
+variable "alb_arn" {
+  description = "ARN of the Application Load Balancer"
   type        = string
-}
-
-variable "env_config" {
-  description = "Environment-specific configuration"
-  type        = any
 }

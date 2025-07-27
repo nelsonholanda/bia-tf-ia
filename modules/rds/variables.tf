@@ -78,3 +78,15 @@ variable "maintenance_window" {
   type        = string
   default     = "sun:04:00-sun:05:00"
 }
+
+variable "rds_kms_key_arn" {
+  description = "ARN of the KMS key for RDS encryption"
+  type        = string
+  default     = null
+}
+
+variable "secrets_kms_key_arn" {
+  description = "ARN of the KMS key for Secrets Manager encryption"
+  type        = string
+  default     = null
+}

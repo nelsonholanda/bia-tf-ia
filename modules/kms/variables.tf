@@ -8,13 +8,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-
-variable "log_group_name" {
-  description = "CloudWatch log group name"
-  type        = string
-}
-
-variable "env_config" {
-  description = "Environment-specific configuration"
-  type        = any
-}

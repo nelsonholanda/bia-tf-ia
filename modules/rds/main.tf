@@ -6,6 +6,8 @@ locals {
   db_host = regex("^([^:]+)", aws_db_instance.bia.endpoint)[0]
 }
 
+# KMS keys are managed by the KMS module
+
 # DB Subnet Group
 resource "aws_db_subnet_group" "bia" {
   name       = "bia-${var.environment}-subnet-group"
@@ -20,7 +22,8 @@ resource "aws_db_subnet_group" "bia" {
 resource "aws_secretsmanager_secret" "db_password" {
   name                    = "bia-${var.environment}-secrets"
   description             = "Database credentials for BIA ${var.environment} environment"
-  recovery_window_in_days = var.environment == "prod" ? 30 : 0
+  recovery_window_in_days = var.environment == "prod" ? 30 : 7
+  kms_key_id             = var.secrets_kms_key_arn
   
   tags = merge(var.tags, {
     Name        = "bia-${var.environment}-secrets"
@@ -86,7 +89,8 @@ resource "aws_db_instance" "bia" {
   allocated_storage     = var.allocated_storage
   max_allocated_storage = var.max_allocated_storage
   storage_type          = "gp2"
-  storage_encrypted     = false
+  storage_encrypted     = var.environment == "prod" ? true : false
+  kms_key_id           = var.rds_kms_key_arn
 
   db_name  = var.database_name
   username = var.db_username
@@ -95,13 +99,15 @@ resource "aws_db_instance" "bia" {
   vpc_security_group_ids = var.security_group_ids
   db_subnet_group_name   = aws_db_subnet_group.bia.name
 
-  multi_az                = var.environment == "prod" ? true : false
-  backup_retention_period = var.environment == "prod" ? 7 : 1
+  multi_az                = var.env_config.multi_az
+  backup_retention_period = var.env_config.backup_retention_period
+  performance_insights_enabled = try(var.env_config.enable_performance_insights, false)
   backup_window           = var.backup_window
   maintenance_window      = var.maintenance_window
 
-  skip_final_snapshot = true
-  deletion_protection = false
+  skip_final_snapshot       = var.environment == "prod" ? false : true
+  final_snapshot_identifier = var.environment == "prod" ? "bia-${var.environment}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null
+  deletion_protection       = try(var.env_config.enable_deletion_protection, false)
 
   tags = merge(var.tags, {
     Name = "bia-${var.environment}-db"

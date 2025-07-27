@@ -4,7 +4,11 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.0"
+      version = "~> 6.15.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6.0"
     }
   }
 
@@ -20,6 +24,14 @@ provider "aws" {
 # Data sources for existing resources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
+
+# KMS Module (for production encryption)
+module "kms" {
+  source = "./modules/kms"
+
+  environment = var.environment
+  tags        = local.common_tags
+}
 
 # VPC Module
 module "vpc" {
@@ -56,6 +68,7 @@ module "cloudwatch" {
   environment    = var.environment
   tags           = local.common_tags
   log_group_name = var.log_group_name
+  env_config     = local.current_env
 }
 
 # RDS Module
@@ -68,6 +81,10 @@ module "rds" {
   db_identifier      = "bia"
   security_group_ids = [module.security_groups.bia_rds_sg_id]
   subnet_ids         = module.vpc.private_subnet_ids
+  rds_kms_key_arn    = module.kms.rds_kms_key_arn
+  secrets_kms_key_arn = module.kms.secrets_kms_key_arn
+
+  depends_on = [module.kms]
 }
 
 
@@ -136,4 +153,15 @@ module "ecs_service" {
     module.cloudwatch,
     module.rds
   ]
+}
+
+# WAF Module (for production protection)
+module "waf" {
+  source = "./modules/waf"
+
+  environment = var.environment
+  tags        = local.common_tags
+  alb_arn     = module.alb.alb_arn
+
+  depends_on = [module.alb]
 }

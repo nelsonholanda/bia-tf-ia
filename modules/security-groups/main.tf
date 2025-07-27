@@ -39,19 +39,14 @@ resource "aws_security_group" "bia_rds" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description     = "PostgreSQL from ECS instances"
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.bia_ec2.id]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
+  # Remove egress rule - RDS doesn't need outbound access
   tags = merge(var.tags, {
     Name = "bia-${var.environment}-rds"
   })
@@ -64,6 +59,7 @@ resource "aws_security_group" "bia_alb" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description = "HTTP from internet"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -71,6 +67,7 @@ resource "aws_security_group" "bia_alb" {
   }
 
   ingress {
+    description = "HTTPS from internet"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -78,10 +75,11 @@ resource "aws_security_group" "bia_alb" {
   }
 
   egress {
+    description = "All outbound traffic to ECS"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    security_groups = [aws_security_group.bia_ec2.id]
   }
 
   tags = merge(var.tags, {
@@ -96,6 +94,7 @@ resource "aws_security_group" "bia_ec2" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description     = "Dynamic ports from ALB"
     from_port       = 32768
     to_port         = 65535
     protocol        = "tcp"
@@ -103,10 +102,27 @@ resource "aws_security_group" "bia_ec2" {
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTPS to internet for ECR/S3"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "HTTP to internet for package updates"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description     = "PostgreSQL to RDS"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bia_rds.id]
   }
 
   tags = merge(var.tags, {

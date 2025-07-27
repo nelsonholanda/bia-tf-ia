@@ -75,6 +75,12 @@ output "rds_endpoint" {
   sensitive   = true
 }
 
+output "rds_kms_key_arn" {
+  description = "ARN of the RDS KMS key"
+  value       = module.kms.rds_kms_key_arn
+  sensitive   = true
+}
+
 # Security Group Outputs
 output "security_group_ids" {
   description = "Security group IDs"
@@ -90,5 +96,11 @@ output "security_group_ids" {
 output "db_password_secret_name" {
   description = "Name of the database password secret in Secrets Manager"
   value       = module.rds.db_password_secret_name
+  sensitive   = true
+}
+
+output "waf_web_acl_arn" {
+  description = "ARN of the WAF Web ACL (production only)"
+  value       = module.waf.web_acl_arn
 }
 

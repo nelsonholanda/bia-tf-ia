@@ -26,8 +26,8 @@ locals {
       create_nat_gateway        = false
     }
     prod = {
-      instance_type             = "t3.small"  # Upgraded for production
-      rds_instance_class        = "db.t3.small"  # Upgraded for production
+      instance_type             = "t3.micro"  # Upgraded for production
+      rds_instance_class        = "db.t3.micro"  # Upgraded for production
       container_cpu             = 1024
       container_memory          = 512  # Increased for production
       multi_az                  = true  # High availability for production

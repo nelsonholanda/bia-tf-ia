@@ -2,21 +2,11 @@
 
 ## 📋 Overview
 
-Este projeto implementa um pipeline CI/CD robusto para Terraform com foco em segurança, validação e processo de revisão estruturado.
+Este projeto implementa um pipeline CI/CD simplificado para Terraform com foco em segurança e controle de deployments.
 
 ## 🔄 Workflows Implementados
 
-### 1. **Terraform PR Review** (`.github/workflows/terraform-pr.yml`)
-**Trigger:** Pull Requests para branches `dev` ou `prod`
-
-**Funcionalidades:**
-- ✅ Validação de formato Terraform
-- ✅ Validação de configuração
-- ✅ Security scanning (tfsec + Checkov)
-- ✅ Terraform plan com comentário automático no PR
-- ✅ Upload de resultados para GitHub Security tab
-
-### 2. **Deploy Development** (`.github/workflows/deploy-dev.yml`)
+### 1. **Deploy Development** (`.github/workflows/deploy-dev.yml`)
 **Trigger:** Manual (workflow_dispatch) com confirmação obrigatória
 
 **Funcionalidades:**
@@ -25,92 +15,31 @@ Este projeto implementa um pipeline CI/CD robusto para Terraform com foco em seg
 - 🚀 Deploy com validação pós-deployment
 - 📊 Outputs dos recursos criados
 
-### 3. **Deploy Production** (`.github/workflows/deploy-prod.yml`)
-**Trigger:** Push para branch `prod` ou manual
+### 2. **Deploy Production** (`.github/workflows/deploy-prod.yml`)
+**Trigger:** Push para branch `prod`
 
 **Funcionalidades:**
-- 🔒 Security scanning com falha hard
-- 📋 Plan separado do deploy
-- 🛡️ Environment protection (requer configuração)
+- 🚀 Deploy automático em produção
+- 📋 Terraform plan e apply
 - ✅ Validação pós-deployment
-- 📈 Artifacts com retenção de 90 dias
+- 📊 Outputs dos recursos criados
 
-### 4. **Terraform Validation** (`.github/workflows/terraform-validate.yml`)
-**Trigger:** Push, schedule diário, ou manual
+### 3. **Destroy Development** (`.github/workflows/destroy-dev.yml`)
+**Trigger:** Manual (workflow_dispatch) com confirmação obrigatória
 
 **Funcionalidades:**
-- 🔍 Validação contínua para ambos ambientes
-- 🚨 Detecção de drift de infraestrutura
-- 📝 Criação automática de issues para drift
-- 🔒 Auditoria de segurança agendada
+- 🔒 Confirmação obrigatória "DESTROY-DEV"
+- 🗑️ Terraform destroy
+- ✅ Verificação pós-destruição
 
-## 🔒 Security Scanning
+### 4. **Destroy Production** (`.github/workflows/destroy-prod.yml`)
+**Trigger:** Manual (workflow_dispatch) com confirmação obrigatória
 
-### **Ferramentas Utilizadas:**
-
-#### **tfsec**
-- **Propósito:** Static analysis para Terraform
-- **Configuração:** `.tfsec/config.yml`
-- **Foco:** Vulnerabilidades específicas da AWS
-
-#### **Checkov**
-- **Propósito:** Policy-as-code scanning
-- **Configuração:** `.checkov.yml`
-- **Foco:** Compliance e best practices
-
-### **Configurações de Segurança:**
-
-```yaml
-# Desenvolvimento: soft_fail = true (warnings)
-# Produção: soft_fail = false (bloqueia deploy)
-```
-
-## 📊 Process Flow
-
-### **Pull Request Flow:**
-```mermaid
-graph TD
-    A[Create PR] --> B[Security Scan]
-    B --> C[Terraform Validate]
-    C --> D[Terraform Plan]
-    D --> E[Comment Results on PR]
-    E --> F[Manual Review]
-    F --> G[Merge to target branch]
-```
-
-### **Deployment Flow:**
-```mermaid
-graph TD
-    A[Trigger Deploy] --> B[Security Scan]
-    B --> C[Terraform Plan]
-    C --> D[Save Plan Artifact]
-    D --> E[Deploy with Plan]
-    E --> F[Post-deployment Validation]
-    F --> G[Success Notification]
-```
-
-## 🛠️ Local Development
-
-### **Validação Local:**
-```bash
-# Executar todas as validações localmente
-./validate-local.sh dev
-
-# Executar para produção
-./validate-local.sh prod
-```
-
-### **Ferramentas Necessárias:**
-```bash
-# Terraform
-brew install terraform
-
-# tfsec
-brew install tfsec
-
-# Checkov
-pip install checkov
-```
+**Funcionalidades:**
+- 🔒 Confirmação obrigatória "DESTROY-PRODUCTION"
+- ⚠️ Avisos de segurança adicionais
+- 🗑️ Terraform destroy
+- ✅ Verificação pós-destruição
 
 ## 🔧 Configuration
 
@@ -118,79 +47,12 @@ pip install checkov
 - `AWS_ACCESS_KEY_ID` - AWS Access Key
 - `AWS_SECRET_ACCESS_KEY` - AWS Secret Key
 
-### **Environment Protection (Recomendado):**
-1. Vá para Settings > Environments
-2. Crie environment "production"
-3. Configure required reviewers
-4. Configure deployment branches (apenas `prod`)
-
-### **Branch Protection Rules:**
-```yaml
-# Para branch 'prod'
-- Require pull request reviews
-- Require status checks to pass
-- Require branches to be up to date
-- Include administrators
-```
-
-## 📈 Monitoring e Alertas
-
-### **Drift Detection:**
-- **Frequência:** Diário às 2:00 UTC
-- **Ação:** Cria issue automática se drift detectado
-- **Labels:** `infrastructure-drift`, `{environment}`, `automated`
-
-### **Security Audits:**
-- **Frequência:** Diário (schedule) ou manual
-- **Artifacts:** Resultados salvos por 90 dias
-- **Integration:** GitHub Security tab
-
-## 🚨 Troubleshooting
-
-### **Problemas Comuns:**
-
-#### **Security Scan Failures:**
-```bash
-# Verificar configurações
-cat .tfsec/config.yml
-cat .checkov.yml
-
-# Executar localmente
-tfsec . --config-file .tfsec/config.yml
-checkov -f .checkov.yml
-```
-
-#### **Plan Failures:**
-```bash
-# Verificar backend
-terraform init -backend-config=backend-dev.hcl
-
-# Validar configuração
-terraform validate
-
-# Debug plan
-terraform plan -var="environment=dev" -detailed-exitcode
-```
-
-#### **Drift Detection Issues:**
-```bash
-# Verificar estado atual
-terraform refresh -var="environment=prod"
-
-# Comparar com configuração
-terraform plan -var="environment=prod"
-
-# Investigar mudanças
-aws cloudtrail lookup-events --lookup-attributes AttributeKey=ResourceName,AttributeValue=bia-prod-cluster
-```
+### **Backend Configuration:**
+- **S3 Bucket**: `tf-nh`
+- **Encryption**: Habilitada
+- **State Locking**: Não configurado (sem DynamoDB)
 
 ## 📋 Best Practices
-
-### **Pull Requests:**
-1. ✅ Sempre criar PR para mudanças
-2. ✅ Revisar plan output cuidadosamente
-3. ✅ Verificar security scan results
-4. ✅ Testar em dev antes de prod
 
 ### **Deployments:**
 1. ✅ Dev: Manual com confirmação "DEPLOY-DEV"
@@ -198,23 +60,39 @@ aws cloudtrail lookup-events --lookup-attributes AttributeKey=ResourceName,Attri
 3. ✅ Sempre validar pós-deployment
 4. ✅ Monitorar logs e métricas
 
-### **Security:**
-1. ✅ Nunca ignorar security warnings em prod
-2. ✅ Revisar e corrigir findings regularmente
-3. ✅ Manter ferramentas atualizadas
-4. ✅ Documentar exceções de segurança
+### **Destroy Operations:**
+1. ✅ Sempre manual com confirmação
+2. ✅ Verificação pós-destruição
+3. ✅ Confirmações diferentes por ambiente
+4. ✅ Avisos de segurança para produção
 
-## 🔗 Links Úteis
+## 🚨 Troubleshooting
 
-- [Terraform Best Practices](https://www.terraform.io/docs/cloud/guides/recommended-practices/index.html)
-- [tfsec Documentation](https://aquasecurity.github.io/tfsec/)
-- [Checkov Documentation](https://www.checkov.io/)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+### **Plan Failures:**
+```bash
+# Verificar backend
+terraform init -backend-config=backend-prod.hcl
+
+# Validar configuração
+terraform validate
+
+# Debug plan
+terraform plan -var="environment=prod" -detailed-exitcode
+```
+
+### **Backend Issues:**
+```bash
+# Verificar se bucket S3 existe
+aws s3 ls s3://tf-nh
+
+# Reconfigurar backend se necessário
+terraform init -reconfigure -backend-config=backend-prod.hcl
+```
 
 ## 📞 Support
 
 Para problemas com CI/CD:
 1. Verificar workflow logs no GitHub Actions
 2. Executar validação local com `./validate-local.sh`
-3. Revisar configurações de security scanning
-4. Consultar documentação das ferramentas
+3. Verificar configurações de backend
+4. Consultar documentação do Terraform

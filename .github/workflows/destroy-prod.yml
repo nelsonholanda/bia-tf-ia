@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "DESTROY-PROD" to confirm'
+        description: 'Type "DESTROY-PRODUCTION" to confirm destruction'
         required: true
         type: string
 
@@ -15,10 +15,16 @@ jobs:
     
     steps:
     - name: Validate confirmation
-      if: github.event.inputs.confirm != 'DESTROY-PROD'
+      if: github.event.inputs.confirm != 'DESTROY-PRODUCTION'
       run: |
-        echo "❌ Destruction cancelled. You must type 'DESTROY-PROD' to confirm."
+        echo "❌ Destruction cancelled. You must type 'DESTROY-PRODUCTION' to confirm."
         exit 1
+
+    - name: Additional Safety Check
+      run: |
+        echo "⚠️  WARNING: You are about to destroy the PRODUCTION environment!"
+        echo "🔒 This action will remove all production resources permanently."
+        echo "✅ Confirmation received: ${{ github.event.inputs.confirm }}"
 
     - name: Checkout
       uses: actions/checkout@v4
@@ -40,3 +46,22 @@ jobs:
 
     - name: Terraform Destroy
       run: terraform destroy -var="environment=prod" -auto-approve
+
+    - name: Verify Destruction
+      run: |
+        echo "🔍 Verifying production resources were destroyed..."
+        
+        # Check if main resources still exist
+        if aws ecs describe-clusters --clusters bia-prod-cluster --region us-east-1 2>/dev/null; then
+          echo "⚠️  ECS cluster still exists"
+        else
+          echo "✅ ECS cluster destroyed"
+        fi
+        
+        if aws rds describe-db-instances --db-instance-identifier bia-prod-db --region us-east-1 2>/dev/null; then
+          echo "⚠️  RDS instance still exists"
+        else
+          echo "✅ RDS instance destroyed"
+        fi
+        
+        echo "🗑️  Production environment destruction completed!"

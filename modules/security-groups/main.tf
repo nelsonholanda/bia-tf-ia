@@ -75,11 +75,11 @@ resource "aws_security_group" "bia_alb" {
   }
 
   egress {
-    description = "All outbound traffic to ECS"
+    description = "All outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    security_groups = [aws_security_group.bia_ec2.id]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = merge(var.tags, {
@@ -118,11 +118,11 @@ resource "aws_security_group" "bia_ec2" {
   }
 
   egress {
-    description     = "PostgreSQL to RDS"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bia_rds.id]
+    description = "PostgreSQL to RDS"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["172.16.0.0/20"]  # VPC CIDR for prod
   }
 
   tags = merge(var.tags, {

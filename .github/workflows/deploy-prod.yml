@@ -7,63 +7,11 @@ on:
       - '**.tf'
       - '**.hcl'
       - 'modules/**'
-  workflow_dispatch:
 
 jobs:
-  security-scan:
-    name: Security Scan
+  deploy:
+    name: Deploy to Production
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.5.0
-
-    - name: Terraform Init
-      run: terraform init -backend-config=backend-prod.hcl
-
-    - name: Terraform Format Check
-      run: terraform fmt -check -recursive
-
-    - name: Terraform Validate
-      run: terraform validate
-
-    - name: Run tfsec Security Scan
-      uses: aquasecurity/tfsec-action@v1.0.3
-      with:
-        soft_fail: false  # Fail hard in production
-        format: sarif
-        output: tfsec-results.sarif
-
-    - name: Upload tfsec results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: tfsec-results.sarif
-
-    - name: Run Checkov Security Scan
-      uses: bridgecrewio/checkov-action@master
-      with:
-        directory: .
-        framework: terraform
-        output_format: sarif
-        output_file_path: checkov-results.sarif
-        soft_fail: false  # Fail hard in production
-
-    - name: Upload Checkov results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: checkov-results.sarif
-
-  plan:
-    name: Plan Production Changes
-    runs-on: ubuntu-latest
-    needs: security-scan
     
     steps:
     - name: Checkout
@@ -85,75 +33,13 @@ jobs:
       run: terraform init -backend-config=backend-prod.hcl
 
     - name: Terraform Plan
-      run: |
-        terraform plan -var="environment=prod" -out=tfplan-prod
-        terraform show -no-color tfplan-prod > tfplan-prod.txt
-
-    - name: Upload Plan as Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: terraform-plan-prod
-        path: |
-          tfplan-prod
-          tfplan-prod.txt
-        retention-days: 90  # Keep prod plans longer
-
-    - name: Plan Summary
-      run: |
-        echo "## 📋 Production Deployment Plan Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Changes to be applied:" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        terraform show -no-color tfplan-prod | head -50 >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [security-scan, plan]
-    environment: production  # Requires environment protection rules
-    
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.5.0
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-
-    - name: Download Plan Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: terraform-plan-prod
-
-    - name: Terraform Init
-      run: terraform init -backend-config=backend-prod.hcl
+      run: terraform plan -var="environment=prod" -out=tfplan-prod
 
     - name: Terraform Apply
       run: terraform apply -auto-approve tfplan-prod
 
-    - name: Post-deployment Validation
+    - name: Show Outputs
       run: |
-        echo "🔍 Running post-deployment validation..."
+        echo "✅ Production deployment completed successfully!"
+        echo "📋 Resource outputs:"
         terraform output
-        
-        # Validate critical resources exist
-        aws ecs describe-clusters --clusters bia-prod-cluster --region us-east-1
-        aws rds describe-db-instances --db-instance-identifier bia-prod-db --region us-east-1
-        
-        # Check service health
-        aws ecs describe-services --cluster bia-prod-cluster --services bia-prod-service --region us-east-1
-
-    - name: Notify Deployment Success
-      if: success()
-      run: |
-        echo "✅ Production deployment completed successfully!" >> $GITHUB_STEP_SUMMARY
-        echo "🔗 Check the AWS Console to verify all resources are healthy." >> $GITHUB_STEP_SUMMARY

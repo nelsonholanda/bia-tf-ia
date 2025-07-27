@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "DESTROY-DEV" to confirm'
+        description: 'Type "DESTROY-DEV" to confirm destruction'
         required: true
         type: string
 
 jobs:
   destroy:
-    name: Destroy Dev Environment
+    name: Destroy Development Environment
     runs-on: ubuntu-latest
     
     steps:
@@ -40,3 +40,22 @@ jobs:
 
     - name: Terraform Destroy
       run: terraform destroy -var="environment=dev" -auto-approve
+
+    - name: Verify Destruction
+      run: |
+        echo "🔍 Verifying resources were destroyed..."
+        
+        # Check if main resources still exist
+        if aws ecs describe-clusters --clusters bia-dev-cluster --region us-east-1 2>/dev/null; then
+          echo "⚠️  ECS cluster still exists"
+        else
+          echo "✅ ECS cluster destroyed"
+        fi
+        
+        if aws rds describe-db-instances --db-instance-identifier bia-dev-db --region us-east-1 2>/dev/null; then
+          echo "⚠️  RDS instance still exists"
+        else
+          echo "✅ RDS instance destroyed"
+        fi
+        
+        echo "🗑️  Development environment destruction completed!"

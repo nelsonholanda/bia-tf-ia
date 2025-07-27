@@ -101,6 +101,6 @@ output "db_password_secret_name" {
 
 output "waf_web_acl_arn" {
   description = "ARN of the WAF Web ACL (production only)"
-  value       = module.waf.web_acl_arn
+  value       = var.environment == "prod" ? module.waf.web_acl_arn : null
 }
 

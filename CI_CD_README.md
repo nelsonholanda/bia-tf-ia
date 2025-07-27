@@ -11,6 +11,7 @@ Este projeto implementa um pipeline CI/CD simplificado para Terraform com foco e
 
 **Funcionalidades:**
 - 🔒 Confirmação obrigatória "DEPLOY-DEV"
+- 🔧 Terraform 1.6.6 com init -reconfigure
 - 📋 Terraform plan e apply
 - 🚀 Deploy com validação pós-deployment
 - 📊 Outputs dos recursos criados
@@ -20,7 +21,8 @@ Este projeto implementa um pipeline CI/CD simplificado para Terraform com foco e
 
 **Funcionalidades:**
 - 🚀 Deploy automático em produção
-- 📋 Terraform plan e apply
+- 🔧 Terraform 1.6.6 com validação e verificação de versão
+- 📋 Terraform init -reconfigure, validate, plan e apply
 - ✅ Validação pós-deployment
 - 📊 Outputs dos recursos criados
 
@@ -29,8 +31,9 @@ Este projeto implementa um pipeline CI/CD simplificado para Terraform com foco e
 
 **Funcionalidades:**
 - 🔒 Confirmação obrigatória "DESTROY-DEV"
+- 🔧 Terraform 1.6.6 com init -reconfigure
 - 🗑️ Terraform destroy
-- ✅ Verificação pós-destruição
+- ✅ Verificação pós-destruição de recursos AWS
 
 ### 4. **Destroy Production** (`.github/workflows/destroy-prod.yml`)
 **Trigger:** Manual (workflow_dispatch) com confirmação obrigatória
@@ -38,8 +41,9 @@ Este projeto implementa um pipeline CI/CD simplificado para Terraform com foco e
 **Funcionalidades:**
 - 🔒 Confirmação obrigatória "DESTROY-PRODUCTION"
 - ⚠️ Avisos de segurança adicionais
+- 🔧 Terraform 1.6.6 com init -reconfigure
 - 🗑️ Terraform destroy
-- ✅ Verificação pós-destruição
+- ✅ Verificação pós-destruição de recursos AWS
 
 ## 🔧 Configuration
 
@@ -68,10 +72,19 @@ Este projeto implementa um pipeline CI/CD simplificado para Terraform com foco e
 
 ## 🚨 Troubleshooting
 
+### **Terraform Version Issues:**
+```bash
+# Verificar versão local
+terraform version
+
+# Usar mesma versão dos workflows
+terraform version # Deve ser 1.6.6 ou superior
+```
+
 ### **Plan Failures:**
 ```bash
 # Verificar backend
-terraform init -backend-config=backend-prod.hcl
+terraform init -reconfigure -backend-config=backend-prod.hcl
 
 # Validar configuração
 terraform validate
@@ -87,6 +100,13 @@ aws s3 ls s3://tf-nh
 
 # Reconfigurar backend se necessário
 terraform init -reconfigure -backend-config=backend-prod.hcl
+```
+
+### **GitHub Actions Failures:**
+```bash
+# Verificar logs do workflow
+# Procurar por erros como "unsupported checkable object kind"
+# Verificar se a versão do Terraform está correta (1.6.6)
 ```
 
 ## 📞 Support

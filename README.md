@@ -82,15 +82,18 @@ aws configure
 
 ### **Deploy Development**
 - **Trigger**: Manual com confirmação "DEPLOY-DEV"
-- **Processo**: Plan → Apply → Validate
+- **Terraform**: v1.6.6 com init -reconfigure
+- **Processo**: Init → Plan → Apply → Validate
 
 ### **Deploy Production**
 - **Trigger**: Automático no push para branch `prod`
-- **Processo**: Plan → Apply → Validate
+- **Terraform**: v1.6.6 com validação completa
+- **Processo**: Init → Validate → Plan → Apply → Validate
 
 ### **Destroy Operations**
 - **Dev**: Manual com confirmação "DESTROY-DEV"
 - **Prod**: Manual com confirmação "DESTROY-PRODUCTION"
+- **Verificação**: Validação pós-destruição de recursos AWS
 
 ## 🔧 Configuração por Ambiente
 
@@ -165,6 +168,12 @@ aws configure
 
 ### **Problemas Comuns**
 
+#### **Terraform Version Issues**
+```bash
+# Verificar versão (deve ser 1.6.6+)
+terraform version
+```
+
 #### **Backend Issues**
 ```bash
 terraform init -reconfigure -backend-config=backend-prod.hcl
@@ -174,6 +183,12 @@ terraform init -reconfigure -backend-config=backend-prod.hcl
 ```bash
 terraform validate
 terraform plan -var="environment=prod" -detailed-exitcode
+```
+
+#### **GitHub Actions Errors**
+```bash
+# Verificar se erro "unsupported checkable object kind" foi resolvido
+# Workflows agora usam Terraform 1.6.6 com melhor compatibilidade
 ```
 
 #### **AWS Credentials**

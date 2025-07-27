@@ -155,15 +155,18 @@ waf_web_acl_arn = "arn:aws:wafv2:us-east-1:194722426008:regional/webacl/bia-prod
 - **RDS Database**: ✅ Available
 - **WAF**: ✅ Active e protegendo o ALB
 - **Backend S3**: ✅ Funcionando corretamente
-- **GitHub Actions**: ✅ Workflows corrigidos e funcionais
+- **GitHub Actions**: ✅ Workflows atualizados para Terraform 1.6.6
+- **Pipeline Fix**: ✅ Erro "unsupported checkable object kind" corrigido
 
 ### 🧹 **Otimizações Aplicadas**
 - **Recursos otimizados**: Instâncias t3.micro para economia de custos
 - **Auto Scaling ajustado**: 1-4 instâncias para produção
 - **Projeto limpo**: 2.161 linhas de código desnecessário removidas
-- **Documentação atualizada**: Focada no essencial
+- **Terraform atualizado**: Versão 1.6.6 para melhor compatibilidade
+- **Workflows melhorados**: Init -reconfigure e validação aprimorada
+- **Documentação atualizada**: Focada no essencial e troubleshooting
 
 ---
 **Validado por:** Kiro AI Assistant  
 **Data:** 27 de Janeiro de 2025  
-**Versão:** 2.1 - Final Otimizada e Validada
+**Versão:** 2.2 - Pipeline Corrigido e Workflows Atualizados

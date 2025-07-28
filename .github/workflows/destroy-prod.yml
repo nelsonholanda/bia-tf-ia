@@ -45,7 +45,7 @@ jobs:
       run: terraform init -reconfigure -backend-config=backend-prod.hcl
 
     - name: Terraform Destroy
-      run: terraform destroy -var="environment=prod" -auto-approve
+      run: terraform destroy -var-file=terraform-prod.tfvars -auto-approve
 
     - name: Verify Destruction
       run: |

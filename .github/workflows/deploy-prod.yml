@@ -1,12 +1,12 @@
 name: Deploy Production
 
 on:
-  push:
-    branches: [ prod ]
-    paths:
-      - '**.tf'
-      - '**.hcl'
-      - 'modules/**'
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type "DEPLOY-PROD" to confirm production deployment'
+        required: true
+        type: string
 
 jobs:
   deploy:
@@ -14,6 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Validate Confirmation
+      run: |
+        if [ "${{ github.event.inputs.confirmation }}" != "DEPLOY-PROD" ]; then
+          echo "❌ Invalid confirmation. You must type 'DEPLOY-PROD' to proceed."
+          exit 1
+        fi
+        echo "✅ Confirmation validated. Proceeding with production deployment..."
+
     - name: Checkout
       uses: actions/checkout@v4
 
@@ -38,8 +46,17 @@ jobs:
     - name: Terraform Validate
       run: terraform validate
 
+    - name: Clean up orphaned secrets
+      run: |
+        if [ -f "./cleanup-secrets.sh" ]; then
+          chmod +x ./cleanup-secrets.sh
+          ./cleanup-secrets.sh prod
+        else
+          echo "⚠️ cleanup-secrets.sh not found, skipping secrets cleanup"
+        fi
+
     - name: Terraform Plan
-      run: terraform plan -var="environment=prod" -out=tfplan-prod
+      run: terraform plan -var-file=terraform-prod.tfvars -out=tfplan-prod
 
     - name: Terraform Apply
       run: terraform apply -auto-approve tfplan-prod

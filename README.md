@@ -127,13 +127,14 @@ aws ecs describe-services --cluster bia-prod-cluster --services bia-prod-service
 - **Trigger**: Manual via GitHub Actions
 - **Confirmação**: "DEPLOY-DEV" obrigatória
 - **Terraform**: v1.6.6 com validação completa
-- **Processo**: Init → Validate → Plan → Apply → Show Outputs
+- **Processo**: Init → Secrets Cleanup → Validate → Plan → Apply → Show Outputs
 
 ### **🚀 Deploy Production**
-- **Trigger**: Automático no push para branch `prod`
+- **Trigger**: Manual via GitHub Actions (segurança aprimorada)
+- **Confirmação**: "DEPLOY-PROD" obrigatória
 - **Terraform**: v1.6.6 com validação e verificação
-- **Processo**: Init → Validate → Plan → Apply → Show Outputs
-- **Segurança**: Deploy automático apenas em produção
+- **Processo**: Init → Secrets Cleanup → Validate → Plan → Apply → Show Outputs
+- **Segurança**: Deploy manual com dupla confirmação
 
 ### **🗑️ Destroy Operations**
 - **Dev**: Manual com confirmação "DESTROY-DEV"

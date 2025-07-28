@@ -90,12 +90,21 @@ aws sts get-caller-identity
 
 ### **3. Deploy Local**
 ```bash
-# Deploy para desenvolvimento
+# Deploy para desenvolvimento (recomendado - com limpeza automática)
+./deploy.sh dev apply
+
+# Deploy para produção (recomendado - com limpeza automática)
+./deploy.sh prod apply
+
+# Ou deploy manual (se necessário)
+# Para desenvolvimento
 terraform init -backend-config=backend-dev.hcl -reconfigure
+./cleanup-secrets.sh dev  # Limpar secrets órfãos
 terraform apply -auto-approve
 
-# Deploy para produção
+# Para produção
 terraform init -backend-config=backend-prod.hcl -reconfigure
+./cleanup-secrets.sh prod  # Limpar secrets órfãos
 terraform apply -var-file=terraform-prod.tfvars -auto-approve
 ```
 
@@ -186,6 +195,21 @@ tags = {
 ```
 
 ## 🆘 Troubleshooting
+
+### **Secrets Manager Issues**
+```bash
+# Problema: Secret já existe e está agendado para deleção
+# Solução automática (recomendada):
+./cleanup-secrets.sh dev   # ou prod
+
+# Solução manual:
+aws secretsmanager list-secrets --include-planned-deletion \
+  --query 'SecretList[?contains(Name, `bia-dev`)]' --output table
+
+aws secretsmanager delete-secret \
+  --secret-id <SECRET_ARN> \
+  --force-delete-without-recovery
+```
 
 ### **Terraform Issues**
 ```bash

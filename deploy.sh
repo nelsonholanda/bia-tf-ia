@@ -63,6 +63,20 @@ check_backend() {
     log "Using backend configuration: backend-$env.hcl"
 }
 
+# Função para limpeza de secrets órfãos
+cleanup_secrets() {
+    local env=$1
+    
+    log "Checking for orphaned secrets in environment: $env"
+    
+    if [[ -f "./cleanup-secrets.sh" ]]; then
+        log "Running secrets cleanup script..."
+        ./cleanup-secrets.sh "$env"
+    else
+        warning "cleanup-secrets.sh not found, skipping secrets cleanup"
+    fi
+}
+
 # Função para executar terraform
 execute_terraform() {
     local env=$1
@@ -72,14 +86,22 @@ execute_terraform() {
     
     case $action in
         "plan")
+            # Limpar secrets órfãos antes do plan
+            cleanup_secrets "$env"
             terraform plan -var="environment=$env" -out="tfplan-$env"
             ;;
         "apply")
+            # Limpar secrets órfãos antes do apply
+            cleanup_secrets "$env"
             if [[ -f "tfplan-$env" ]]; then
                 terraform apply "tfplan-$env"
                 rm -f "tfplan-$env"
             else
-                terraform apply -var="environment=$env" -auto-approve
+                if [[ "$env" == "prod" ]]; then
+                    terraform apply -var-file=terraform-prod.tfvars -auto-approve
+                else
+                    terraform apply -var="environment=$env" -auto-approve
+                fi
             fi
             ;;
         "destroy")
@@ -90,8 +112,10 @@ execute_terraform() {
                     log "Destroy operation cancelled"
                     exit 0
                 fi
+                terraform destroy -var-file=terraform-prod.tfvars -auto-approve
+            else
+                terraform destroy -var="environment=$env" -auto-approve
             fi
-            terraform destroy -var="environment=$env" -auto-approve
             ;;
     esac
 }

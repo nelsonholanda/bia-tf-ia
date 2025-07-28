@@ -50,8 +50,16 @@ terraform show > backup-state-$(date +%Y%m%d).txt
 
 ### **2. Desenvolvimento Local**
 ```bash
+# Método recomendado (com limpeza automática)
+./deploy.sh dev plan    # Para planejar
+./deploy.sh dev apply   # Para aplicar
+
+# Método manual (se necessário)
 # Inicializar para desenvolvimento
 terraform init -backend-config=backend-dev.hcl -reconfigure
+
+# Limpar secrets órfãos (importante!)
+./cleanup-secrets.sh dev
 
 # Validar sintaxe
 terraform validate
@@ -65,8 +73,16 @@ terraform apply
 
 ### **3. Produção**
 ```bash
+# Método recomendado (com limpeza automática)
+./deploy.sh prod plan    # Para planejar
+./deploy.sh prod apply   # Para aplicar
+
+# Método manual (se necessário)
 # Inicializar para produção
 terraform init -backend-config=backend-prod.hcl -reconfigure
+
+# Limpar secrets órfãos (importante!)
+./cleanup-secrets.sh prod
 
 # Verificar plano com variáveis de produção
 terraform plan -var-file=terraform-prod.tfvars

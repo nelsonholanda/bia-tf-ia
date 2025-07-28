@@ -25,6 +25,11 @@ resource "aws_secretsmanager_secret" "db_password" {
   recovery_window_in_days = var.environment == "prod" ? 30 : 7
   kms_key_id             = var.secrets_kms_key_arn
   
+  # Force replacement if there are conflicts (helps with orphaned secrets)
+  lifecycle {
+    create_before_destroy = false
+  }
+  
   tags = merge(var.tags, {
     Name        = "bia-${var.environment}-secrets"
     Environment = var.environment

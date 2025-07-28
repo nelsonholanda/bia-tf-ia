@@ -40,11 +40,20 @@ jobs:
 
     - name: Clean up orphaned secrets
       run: |
-        if [ -f "./cleanup-secrets.sh" ]; then
-          chmod +x ./cleanup-secrets.sh
-          ./cleanup-secrets.sh dev
+        # Check for orphaned secrets using AWS CLI directly
+        echo "🔍 Checking for orphaned secrets in development..."
+        PENDING_SECRETS=$(aws secretsmanager list-secrets --include-planned-deletion \
+          --query 'SecretList[?contains(Name, `bia-dev`) && DeletedDate].ARN' --output text)
+        
+        if [ ! -z "$PENDING_SECRETS" ]; then
+          echo "🗑️ Found orphaned secrets, cleaning up..."
+          for secret in $PENDING_SECRETS; do
+            echo "Deleting secret: $secret"
+            aws secretsmanager delete-secret --secret-id $secret --force-delete-without-recovery
+          done
+          echo "✅ Orphaned secrets cleanup completed"
         else
-          echo "⚠️ cleanup-secrets.sh not found, skipping secrets cleanup"
+          echo "✅ No orphaned secrets found"
         fi
 
     - name: Terraform Plan

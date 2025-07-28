@@ -71,9 +71,24 @@ cleanup_secrets() {
     
     if [[ -f "./cleanup-secrets.sh" ]]; then
         log "Running secrets cleanup script..."
+        chmod +x ./cleanup-secrets.sh
         ./cleanup-secrets.sh "$env"
     else
-        warning "cleanup-secrets.sh not found, skipping secrets cleanup"
+        log "Using AWS CLI for secrets cleanup..."
+        # Fallback to AWS CLI if script is not found
+        PENDING_SECRETS=$(aws secretsmanager list-secrets --include-planned-deletion \
+          --query "SecretList[?contains(Name, 'bia-${env}') && DeletedDate].ARN" --output text 2>/dev/null || echo "")
+        
+        if [ ! -z "$PENDING_SECRETS" ]; then
+            log "Found orphaned secrets, cleaning up..."
+            for secret in $PENDING_SECRETS; do
+                log "Deleting secret: $secret"
+                aws secretsmanager delete-secret --secret-id $secret --force-delete-without-recovery >/dev/null 2>&1
+            done
+            log "Orphaned secrets cleanup completed"
+        else
+            log "No orphaned secrets found"
+        fi
     fi
 }
 

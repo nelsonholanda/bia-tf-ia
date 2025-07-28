@@ -25,6 +25,9 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# Secrets cleanup is handled by the cleanup-secrets.sh script
+# which runs before terraform apply in the deploy.sh script
+
 # KMS Module (for production encryption)
 module "kms" {
   source = "./modules/kms"
@@ -84,7 +87,9 @@ module "rds" {
   rds_kms_key_arn    = module.kms.rds_kms_key_arn
   secrets_kms_key_arn = module.kms.secrets_kms_key_arn
 
-  depends_on = [module.kms]
+  depends_on = [
+    module.kms
+  ]
 }
 
 

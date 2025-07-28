@@ -4,7 +4,7 @@
 [![AWS](https://img.shields.io/badge/AWS-Cloud-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Infraestrutura como código (IaC) para o sistema BIA usando Terraform na AWS com suporte a múltiplos ambientes, CI/CD automatizado e melhores práticas de segurança.
+Infraestrutura como código (IaC) para o sistema BIA usando Terraform na AWS com suporte a múltiplos ambientes, CI/CD automatizado e melhores práticas de segurança. Projeto totalmente sincronizado entre código Terraform e recursos AWS.
 
 ## 🏗️ Arquitetura
 
@@ -91,19 +91,25 @@ aws sts get-caller-identity
 ### **3. Deploy Local**
 ```bash
 # Deploy para desenvolvimento
-./deploy.sh dev
+terraform init -backend-config=backend-dev.hcl -reconfigure
+terraform apply -auto-approve
 
 # Deploy para produção
-./deploy.sh prod
+terraform init -backend-config=backend-prod.hcl -reconfigure
+terraform apply -var-file=terraform-prod.tfvars -auto-approve
 ```
 
 ### **4. Validação**
 ```bash
 # Validar configuração local
-./validate-local.sh dev
+terraform validate
 
 # Verificar recursos criados
 terraform output
+
+# Verificar status dos serviços ECS
+aws ecs describe-services --cluster bia-dev-cluster --services bia-dev-service
+aws ecs describe-services --cluster bia-prod-cluster --services bia-prod-service
 ```
 
 ## 🔄 CI/CD Workflows
@@ -215,9 +221,8 @@ aws rds describe-db-instances --db-instance-identifier bia-prod-db
 
 ## 📚 Documentação Adicional
 
-- **[CI/CD Documentation](./CI_CD_README.md)** - Detalhes dos workflows
 - **[Secrets Setup](./SECRETS_SETUP.md)** - Configuração de credenciais
-- **[Validation Report](./VALIDATION_REPORT.md)** - Relatório de conformidade
+- **[Sincronização de Ambientes](./SINCRONIZACAO_AMBIENTES_COMPLETA.md)** - Relatório de sincronização completa
 
 ## 🤝 Contribuição
 
@@ -235,8 +240,33 @@ Para problemas ou dúvidas:
 3. Consultar documentação específica
 4. Verificar configurações de backend
 
+## 🔄 Como Fazer Alterações
+
+### **Alterações na Infraestrutura**
+1. **Modificar arquivos Terraform**: Edite os módulos em `modules/` ou arquivos principais
+2. **Validar localmente**: Execute `terraform validate` e `terraform plan`
+3. **Testar em desenvolvimento**: Aplique primeiro no ambiente de dev
+4. **Aplicar em produção**: Use o arquivo `terraform-prod.tfvars` para produção
+
+### **Adicionando Novos Recursos**
+1. **Criar módulo**: Adicione novo módulo em `modules/nome-do-recurso/`
+2. **Configurar variáveis**: Adicione variáveis necessárias em `variables.tf`
+3. **Atualizar locals**: Configure diferenças por ambiente em `locals.tf`
+4. **Adicionar outputs**: Exponha informações importantes em `outputs.tf`
+
+### **Modificando Configurações por Ambiente**
+- **Desenvolvimento**: Edite `terraform.tfvars` e configurações em `locals.tf`
+- **Produção**: Edite `terraform-prod.tfvars` e configurações específicas de prod
+
+### **Sincronização com AWS Console**
+Se recursos forem alterados manualmente no console AWS:
+1. Execute `terraform refresh` para sincronizar o state
+2. Execute `terraform plan` para ver diferenças
+3. Execute `terraform apply` para aplicar correções
+4. Documente as alterações
+
 ---
 
-**Versão**: 2.3 - Documentação Completa e Otimizada  
-**Última atualização**: 27 de Janeiro de 2025  
+**Versão**: 3.0 - Projeto Sincronizado e Otimizado  
+**Última atualização**: 28 de Julho de 2025  
 **Mantido por**: Nelson Holanda

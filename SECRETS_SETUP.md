@@ -1,196 +1,215 @@
-# 🔐 Configuração de Secrets e Parameter Store - VERSÃO CORRIGIDA
+# 🔐 Configuração de Secrets - BIA Infrastructure
 
-## 📋 Resumo das Mudanças
+## 📋 Visão Geral
 
-Implementação corrigida conforme especificações:
+Este documento descreve como configurar os secrets necessários para o funcionamento da infraestrutura BIA. Os secrets são gerenciados pelo AWS Secrets Manager e incluem credenciais de banco de dados e outras informações sensíveis.
 
-### ✅ **Implementações Realizadas:**
+## 🔑 Secrets Necessários
 
-1. **Secrets padronizados** - Nomenclatura `bia-{environment}-secrets`
-2. **Credenciais completas** - Todos os dados do banco em um único secret
-3. **Permissões IAM atualizadas** - Acesso aos secrets para ECS tasks
-4. **Task Definition atualizada** - Usa secrets em vez de environment variables
-5. **Scripts de validação** - Verificação automática da configuração
-6. **Correção de endpoint** - Host separado da porta corretamente
+### **1. Database Credentials (Automático)**
+- **Nome**: `bia-{environment}-secrets`
+- **Descrição**: Credenciais do banco PostgreSQL
+- **Conteúdo**: Gerado automaticamente pelo Terraform
+- **Criptografia**: KMS (produção) / AWS Managed (desenvolvimento)
 
-## 🏗️ **Arquitetura de Secrets**
-
-### **AWS Secrets Manager (Credenciais Completas do Banco):**
-- `bia-dev-secrets` - Credenciais completas do banco (DEV)
-- `bia-prod-secrets` - Credenciais completas do banco (PROD)
-
-### **Estrutura do Secret:**
-```json
-{
-  "username": "postgres",
-  "password": "generated_password",
-  "engine": "postgres",
-  "host": "hostname_only",
-  "port": 5432,
-  "dbname": "bia"
-}
-```
-
-## 🔧 **Como Configurar**
-
-### **1. Deploy Inicial:**
+### **2. Application Secrets (Manual)**
+Se sua aplicação precisar de secrets adicionais, configure manualmente:
 
 ```bash
-# Para DEV
-terraform apply -var="environment=dev" -var="db_password=SuaSenhaSegura123"
-
-# Para PROD
-terraform apply -var="environment=prod" -var="db_password=SuaSenhaSeguraProd456"
+# Exemplo de secret adicional
+aws secretsmanager create-secret \
+  --name "bia-prod-app-secrets" \
+  --description "Application secrets for BIA prod environment" \
+  --secret-string '{
+    "api_key": "your-api-key",
+    "jwt_secret": "your-jwt-secret",
+    "external_service_token": "your-token"
+  }'
 ```
 
-### **2. Usando o Script de Setup:**
+## 🚀 Configuração Automática
 
+Os secrets de banco de dados são criados automaticamente pelo Terraform:
+
+### **Desenvolvimento**
 ```bash
-# Dar permissão de execução
-chmod +x setup-secrets.sh
+# Inicializar Terraform
+terraform init -backend-config=backend-dev.hcl -reconfigure
 
-# Configurar DEV
-./setup-secrets.sh dev "SuaSenhaSegura123"
-
-# Configurar PROD
-./setup-secrets.sh prod "SuaSenhaSeguraProd456"
+# Aplicar configuração (cria secrets automaticamente)
+terraform apply
 ```
 
-### **3. Verificar Configuração:**
-
+### **Produção**
 ```bash
-# Verificar manualmente
-aws secretsmanager get-secret-value --secret-id bia-dev-db-password
+# Inicializar Terraform
+terraform init -backend-config=backend-prod.hcl -reconfigure
 
-# Verificar parâmetros (se usando Parameter Store)
-aws ssm get-parameter --name rdsendpointdev
-aws ssm get-parameter --name portdb
-aws ssm get-parameter --name userdb
+# Aplicar configuração (cria secrets automaticamente)
+terraform apply -var-file=terraform-prod.tfvars
 ```
 
-## 🔄 **Como Alterar Senha do Banco**
+## 🔍 Verificação de Secrets
 
-### **Método 1: Via Terraform**
+### **Listar Secrets Existentes**
 ```bash
-terraform apply -var="environment=dev" -var="db_password=NovaSenha123"
+# Listar todos os secrets do projeto
+aws secretsmanager list-secrets \
+  --query 'SecretList[?contains(Name, `bia`)].{Name:Name,Description:Description}' \
+  --output table
 ```
 
-### **Método 2: Via AWS CLI**
+### **Verificar Conteúdo do Secret**
 ```bash
-aws secretsmanager update-secret --secret-id bia-dev-secrets --secret-string "NovaSenha123"
+# Ver metadados (sem revelar o conteúdo)
+aws secretsmanager describe-secret --secret-id bia-prod-secrets
+
+# Ver conteúdo (cuidado - informação sensível)
+aws secretsmanager get-secret-value --secret-id bia-prod-secrets \
+  --query 'SecretString' --output text | jq .
 ```
 
-### **Método 3: Via Console AWS**
-1. Acesse AWS Secrets Manager
-2. Encontre o secret `bia-dev-secrets`
-3. Clique em "Retrieve secret value"
-4. Clique em "Edit"
-5. Altere a senha
-6. Salve
-
-## 🚀 **Deploy Apenas na Branch DEV**
-
-Para testes, o deploy será feito apenas na branch dev:
-
+### **Verificar Criptografia**
 ```bash
-# Fazer commit das mudanças
-git add .
-git commit -m "Implement Parameter Store and Secrets Manager integration"
-
-# Push apenas para dev
-git push origin dev
-
-# Testar no ambiente dev antes de fazer merge para prod
+# Verificar chave KMS usada (produção)
+aws secretsmanager describe-secret --secret-id bia-prod-secrets \
+  --query 'KmsKeyId' --output text
 ```
 
-## 📦 **Estrutura dos Módulos Atualizada**
+## 🔄 Rotação de Secrets
 
-### **Módulo RDS (`modules/rds/`):**
-- Cria o secret completo junto com o banco
-- Nomenclatura padronizada: `bia-{environment}-secrets`
-- Todas as credenciais em um único secret
-
-### **Módulo ECS Service:**
-- Task Definition usa secrets do Secrets Manager
-- Variáveis de ambiente obtidas dinamicamente do secret
-- Suporte completo para ambos os ambientes (dev/prod)
-
-## 🔍 **Troubleshooting**
-
-### **Problema: Host do banco contém porta (CORRIGIDO)**
-**Sintoma**: Aplicação não consegue conectar ao banco porque o endpoint vem com porta junto (ex: `host:5432`)
-
-**Solução implementada**:
-- Uso de regex para extrair apenas o hostname: `regex("^([^:]+)", aws_db_instance.bia.endpoint)[0]`
-- Validação manual através de comandos AWS CLI
-
-**Como verificar**:
+### **Rotação Automática (Recomendado)**
 ```bash
-# Verificar manualmente o secret
-aws secretsmanager get-secret-value --secret-id bia-dev-db-password | jq '.SecretString | fromjson'
+# Configurar rotação automática para 30 dias
+aws secretsmanager rotate-secret \
+  --secret-id bia-prod-secrets \
+  --rotation-rules AutomaticallyAfterDays=30
 ```
 
-### **Problema: Task não consegue acessar secrets**
+### **Rotação Manual**
 ```bash
-# Verificar se o secret existe
-aws secretsmanager describe-secret --secret-id bia-dev-db-password
+# Gerar nova senha
+NEW_PASSWORD=$(openssl rand -base64 32)
 
-# Verificar parâmetros
-aws ssm describe-parameters --filters Key=Name,Values=rdsendpointdev
+# Atualizar secret
+aws secretsmanager update-secret \
+  --secret-id bia-prod-secrets \
+  --secret-string "{
+    \"username\": \"bia_user\",
+    \"password\": \"$NEW_PASSWORD\",
+    \"engine\": \"postgres\",
+    \"host\": \"bia-prod-db.cluster-xyz.us-east-1.rds.amazonaws.com\",
+    \"port\": 5432,
+    \"dbname\": \"bia\"
+  }"
+
+# Reiniciar serviço ECS para usar nova senha
+aws ecs update-service \
+  --cluster bia-prod-cluster \
+  --service bia-prod-service \
+  --force-new-deployment
 ```
 
-### **Problema: Parâmetros não encontrados**
+## 🔒 Segurança e Boas Práticas
+
+### **Permissões IAM**
+As seguintes permissões são configuradas automaticamente:
+- ECS Task Execution Role pode ler secrets
+- KMS permite descriptografia via Secrets Manager
+- Logs não expõem conteúdo dos secrets
+
+### **Criptografia**
+- **Desenvolvimento**: AWS Managed Keys
+- **Produção**: Customer Managed KMS Keys com rotação automática
+
+### **Auditoria**
 ```bash
-# Listar todos os parâmetros
-aws ssm describe-parameters
-
-# Verificar parâmetro específico
-aws ssm get-parameter --name userdb
+# Verificar acessos aos secrets
+aws logs filter-log-events \
+  --log-group-name /aws/secretsmanager/bia-prod-secrets \
+  --start-time $(date -d '24 hours ago' +%s)000
 ```
 
-## 🔧 **Correção do Problema do Endpoint com Porta**
-
-### **Problema Identificado:**
-O endpoint do RDS estava sendo armazenado no secret com a porta incluída (ex: `hostname:5432`), causando problemas de conectividade na aplicação.
-
-### **Solução Implementada:**
-1. **Regex para extrair hostname**: `regex("^([^:]+)", aws_db_instance.bia.endpoint)[0]`
-2. **Local value para processamento**: Criado `local.db_host` para garantir consistência
-3. **Validação manual**: Comandos AWS CLI para verificar configuração
-4. **Outputs adicionais**: Para facilitar debug e monitoramento
-
-### **Como Aplicar a Correção:**
-
+### **Monitoramento**
 ```bash
-# 1. Aplicar as mudanças no Terraform
-terraform plan -var="environment=dev"
-terraform apply -var="environment=dev"
-
-# 2. Reiniciar o serviço ECS para pegar os novos secrets
-aws ecs update-service --cluster bia-dev-cluster --service bia-dev-service --force-new-deployment
+# Criar alarme para acessos não autorizados
+aws cloudwatch put-metric-alarm \
+  --alarm-name "BIA-Secrets-Unauthorized-Access" \
+  --alarm-description "Alert on unauthorized secret access" \
+  --metric-name "SecretRetrievals" \
+  --namespace "AWS/SecretsManager" \
+  --statistic Sum \
+  --period 300 \
+  --threshold 10 \
+  --comparison-operator GreaterThanThreshold
 ```
 
-## 📋 **Checklist de Deploy DEV**
+## 🚨 Troubleshooting
 
-- [ ] Aplicar Terraform na branch dev
-- [ ] Verificar criação do secret `bia-dev-secrets`
-- [ ] **NOVO**: Validar configuração manualmente com AWS CLI
-- [ ] Verificar que o host não contém porta (apenas hostname)
-- [ ] Testar conectividade da aplicação com o banco
-- [ ] Verificar logs do ECS para erros de autenticação
-- [ ] Validar funcionamento antes de merge para prod
+### **Problema: ECS não consegue acessar secrets**
+```bash
+# Verificar permissões da role
+aws iam get-role-policy \
+  --role-name bia-prod-ecsTaskExecutionRole \
+  --policy-name bia-prod-ecs-secrets-policy
 
-## 🔄 **Próximos Passos**
+# Verificar se secret existe
+aws secretsmanager describe-secret --secret-id bia-prod-secrets
 
-1. **Testar na DEV**: Validar toda a funcionalidade
-2. **Ajustes se necessário**: Corrigir problemas encontrados
-3. **Merge para PROD**: Após validação completa na dev
-4. **Deploy PROD**: Aplicar as mudanças em produção
+# Verificar logs do ECS
+aws logs filter-log-events \
+  --log-group-name /ecs/bia-prod \
+  --filter-pattern "ERROR"
+```
 
-## 📞 **Suporte**
+### **Problema: Secret não encontrado**
+```bash
+# Verificar se foi criado pelo Terraform
+terraform state list | grep secretsmanager
 
-Para dúvidas sobre a configuração de secrets:
-1. Consulte os logs do CloudWatch
-2. Verifique as permissões IAM
-3. Teste acesso aos secrets via AWS CLI
-4. Entre em contato com a equipe de infraestrutura
+# Recriar se necessário
+terraform apply -var-file=terraform-prod.tfvars -target=module.rds.aws_secretsmanager_secret.db_password
+```
+
+### **Problema: Permissões KMS**
+```bash
+# Verificar política da chave KMS
+aws kms get-key-policy \
+  --key-id alias/bia-prod-secrets \
+  --policy-name default
+
+# Testar descriptografia
+aws kms decrypt \
+  --ciphertext-blob fileb://encrypted-data \
+  --query Plaintext \
+  --output text | base64 -d
+```
+
+## 📋 Checklist de Configuração
+
+### **Desenvolvimento**
+- [ ] Terraform aplicado com sucesso
+- [ ] Secret `bia-dev-secrets` criado
+- [ ] ECS consegue acessar o secret
+- [ ] Aplicação conecta ao banco de dados
+
+### **Produção**
+- [ ] Terraform aplicado com sucesso
+- [ ] Secret `bia-prod-secrets` criado
+- [ ] Chave KMS configurada
+- [ ] ECS consegue acessar o secret
+- [ ] Aplicação conecta ao banco de dados
+- [ ] Rotação automática configurada (opcional)
+- [ ] Monitoramento configurado
+
+## 🔗 Referências
+
+- [AWS Secrets Manager Documentation](https://docs.aws.amazon.com/secretsmanager/)
+- [ECS Secrets Management](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/specifying-sensitive-data.html)
+- [KMS Key Policies](https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html)
+
+---
+
+**Versão**: 2.0  
+**Última atualização**: 28 de Julho de 2025  
+**Mantido por**: Nelson Holanda

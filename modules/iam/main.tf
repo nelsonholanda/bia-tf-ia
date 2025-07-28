@@ -94,6 +94,24 @@ resource "aws_iam_policy" "ecs_secrets_policy" {
           "arn:aws:secretsmanager:*:*:secret:bia-${var.environment}-*",
           "arn:aws:secretsmanager:*:*:secret:rds-db-credentials/bia-${var.environment}-*"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = [
+          "arn:aws:kms:*:*:key/*"
+        ]
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = [
+              "secretsmanager.*.amazonaws.com",
+              "ssm.*.amazonaws.com"
+            ]
+          }
+        }
       }
     ]
   })

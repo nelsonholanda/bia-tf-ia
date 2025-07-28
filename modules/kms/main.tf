@@ -77,6 +77,18 @@ resource "aws_kms_key" "secrets" {
           "kms:CreateGrant"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "Allow ECS Task Execution Role"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/bia-${var.environment}-ecsTaskExecutionRole"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
       }
     ]
   })

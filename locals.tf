@@ -32,17 +32,17 @@ locals {
       container_memory        = 307  # Increased for production
       multi_az                = true # High availability for production
       backup_retention_period = 30   # Extended backup retention
-      # ECS Tasks Auto Scaling - More conservative for production
-      task_min_capacity      = 2    # Minimum 2 tasks for availability
+      # ECS Tasks Auto Scaling - Conservative for production
+      task_min_capacity      = 1    # Minimum 1 task for cost optimization
       task_max_capacity      = 20   # Higher max for production load
-      task_desired_capacity  = 2    # Start with 2 tasks
+      task_desired_capacity  = 1    # Start with 1 task
       cpu_scale_target       = 60.0 # Lower threshold for faster scaling
       cpu_scale_out_cooldown = 600  # Longer cooldown for stability
       cpu_scale_in_cooldown  = 900  # Even longer for scale-in
       # EC2 Instances Auto Scaling
-      instance_min_capacity     = 1 # Minimum 2 instances for availability
+      instance_min_capacity     = 1 # Minimum 1 instance for cost optimization
       instance_max_capacity     = 4 # Higher max for production
-      instance_desired_capacity = 1 # Start with 2 instances
+      instance_desired_capacity = 1 # Start with 1 instance
       use_private_subnets       = true
       create_nat_gateway        = true
       # Production-specific settings

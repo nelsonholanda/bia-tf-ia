@@ -47,7 +47,7 @@ locals {
       create_nat_gateway        = true
       # Production-specific settings
       enable_container_insights   = true
-      enable_deletion_protection  = true
+      enable_deletion_protection  = false  # Disabled for easier management
       enable_final_snapshot       = true
       log_retention_days          = 30
       enable_performance_insights = true

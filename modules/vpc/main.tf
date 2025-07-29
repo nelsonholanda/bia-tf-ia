@@ -1,8 +1,13 @@
-# VPC Module - Create VPC and subnets for multiple environments
+# VPC Module - Create VPC and subnets for multiple environments with dynamic AZs
 
-# Create VPC
+# Data source for available AZs
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# Create VPC with dynamic CIDR
 resource "aws_vpc" "main" {
-  cidr_block           = var.environment == "dev" ? "172.16.48.0/20" : "172.16.0.0/20"
+  cidr_block           = var.env_config.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
 
@@ -15,15 +20,18 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Create public subnets
-resource "aws_subnet" "public_1a" {
+# Create public subnets dynamically
+resource "aws_subnet" "public" {
+  count                   = var.env_config.availability_zones
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.environment == "dev" ? "172.16.48.0/27" : "172.16.0.0/27"
-  availability_zone       = "us-east-1a"
+  cidr_block              = cidrsubnet(var.env_config.vpc_cidr, 8, count.index)
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
   map_public_ip_on_launch = true
 
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-subnet-public1-us-east-1a"
+    Name = "bia-${var.environment}-subnet-public-${count.index + 1}-${data.aws_availability_zones.available.names[count.index]}"
+    Type = "Public"
+    Tier = "Web"
   })
 
   lifecycle {
@@ -31,72 +39,17 @@ resource "aws_subnet" "public_1a" {
   }
 }
 
-resource "aws_subnet" "public_1c" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.environment == "dev" ? "172.16.48.32/27" : "172.16.0.32/27"
-  availability_zone       = "us-east-1c"
-  map_public_ip_on_launch = true
-
-  tags = merge(var.tags, {
-    Name = "bia-${var.environment}-subnet-public2-us-east-1c"
-  })
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
-
-resource "aws_subnet" "public_1f" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.environment == "dev" ? "172.16.48.64/27" : "172.16.0.64/27"
-  availability_zone       = "us-east-1f"
-  map_public_ip_on_launch = true
-
-  tags = merge(var.tags, {
-    Name = "bia-${var.environment}-subnet-public3-us-east-1f"
-  })
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
-
-# Create private subnets
-resource "aws_subnet" "private_1a" {
+# Create private subnets dynamically
+resource "aws_subnet" "private" {
+  count             = var.env_config.availability_zones
   vpc_id            = aws_vpc.main.id
-  cidr_block        = var.environment == "dev" ? "172.16.48.96/27" : "172.16.0.96/27"
-  availability_zone = "us-east-1a"
+  cidr_block        = cidrsubnet(var.env_config.vpc_cidr, 8, count.index + 10)
+  availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-subnet-private1-us-east-1a"
-  })
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
-
-resource "aws_subnet" "private_1c" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.environment == "dev" ? "172.16.48.128/27" : "172.16.0.128/27"
-  availability_zone = "us-east-1c"
-
-  tags = merge(var.tags, {
-    Name = "bia-${var.environment}-subnet-private2-us-east-1c"
-  })
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
-
-resource "aws_subnet" "private_1f" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.environment == "dev" ? "172.16.48.160/27" : "172.16.0.160/27"
-  availability_zone = "us-east-1f"
-
-  tags = merge(var.tags, {
-    Name = "bia-${var.environment}-subnet-private3-us-east-1f"
+    Name = "bia-${var.environment}-subnet-private-${count.index + 1}-${data.aws_availability_zones.available.names[count.index]}"
+    Type = "Private"
+    Tier = "Application"
   })
 
   lifecycle {
@@ -128,79 +81,133 @@ resource "aws_route_table" "public" {
 
   tags = merge(var.tags, {
     Name = "bia-${var.environment}-public-rt"
+    Type = "Public"
   })
 }
 
 # Route table associations for public subnets
-resource "aws_route_table_association" "public_1a" {
-  subnet_id      = aws_subnet.public_1a.id
+resource "aws_route_table_association" "public" {
+  count          = var.env_config.availability_zones
+  subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
 
-resource "aws_route_table_association" "public_1c" {
-  subnet_id      = aws_subnet.public_1c.id
-  route_table_id = aws_route_table.public.id
-}
-
-resource "aws_route_table_association" "public_1f" {
-  subnet_id      = aws_subnet.public_1f.id
-  route_table_id = aws_route_table.public.id
-}
-
-# NAT Gateway (only for production)
+# NAT Gateways (one per AZ for production, one for dev)
 resource "aws_eip" "nat" {
-  count  = var.env_config.create_nat_gateway ? 1 : 0
+  count  = var.env_config.create_nat_gateway ? (var.environment == "prod" ? var.env_config.availability_zones : 1) : 0
   domain = "vpc"
 
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-nat-eip"
+    Name = "bia-${var.environment}-nat-eip-${count.index + 1}"
   })
 
   depends_on = [aws_internet_gateway.main]
 }
 
 resource "aws_nat_gateway" "main" {
-  count         = var.env_config.create_nat_gateway ? 1 : 0
-  allocation_id = aws_eip.nat[0].id
-  subnet_id     = aws_subnet.public_1a.id
+  count         = var.env_config.create_nat_gateway ? (var.environment == "prod" ? var.env_config.availability_zones : 1) : 0
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
 
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-nat-gateway"
+    Name = "bia-${var.environment}-nat-gateway-${count.index + 1}"
   })
 
   depends_on = [aws_internet_gateway.main]
 }
 
-# Route table for private subnets
+# Route tables for private subnets
 resource "aws_route_table" "private" {
+  count  = var.env_config.create_nat_gateway ? (var.environment == "prod" ? var.env_config.availability_zones : 1) : 1
   vpc_id = aws_vpc.main.id
 
-  # Add route to NAT Gateway if it exists (production only)
+  # Add route to NAT Gateway if it exists
   dynamic "route" {
     for_each = var.env_config.create_nat_gateway ? [1] : []
     content {
       cidr_block     = "0.0.0.0/0"
-      nat_gateway_id = aws_nat_gateway.main[0].id
+      nat_gateway_id = var.environment == "prod" ? aws_nat_gateway.main[count.index].id : aws_nat_gateway.main[0].id
     }
   }
 
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-private-rt"
+    Name = "bia-${var.environment}-private-rt-${count.index + 1}"
+    Type = "Private"
   })
 }
 
 # Route table associations for private subnets
-resource "aws_route_table_association" "private_1a" {
-  subnet_id      = aws_subnet.private_1a.id
-  route_table_id = aws_route_table.private.id
+resource "aws_route_table_association" "private" {
+  count          = var.env_config.availability_zones
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = var.environment == "prod" ? aws_route_table.private[count.index].id : aws_route_table.private[0].id
 }
 
-resource "aws_route_table_association" "private_1c" {
-  subnet_id      = aws_subnet.private_1c.id
-  route_table_id = aws_route_table.private.id
+# VPC Endpoints for cost optimization and security
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${data.aws_region.current.id}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = concat([aws_route_table.public.id], aws_route_table.private[*].id)
+
+  tags = merge(var.tags, {
+    Name = "bia-${var.environment}-s3-endpoint"
+  })
 }
 
-resource "aws_route_table_association" "private_1f" {
-  subnet_id      = aws_subnet.private_1f.id
-  route_table_id = aws_route_table.private.id
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  count               = var.environment == "prod" ? 1 : 0
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.id}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoints[0].id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name = "bia-${var.environment}-ecr-dkr-endpoint"
+  })
 }
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  count               = var.environment == "prod" ? 1 : 0
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.id}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoints[0].id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name = "bia-${var.environment}-ecr-api-endpoint"
+  })
+}
+
+# Security group for VPC endpoints
+resource "aws_security_group" "vpc_endpoints" {
+  count       = var.environment == "prod" ? 1 : 0
+  name        = "bia-${var.environment}-vpc-endpoints"
+  description = "Security group for VPC endpoints"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.main.cidr_block]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, {
+    Name = "bia-${var.environment}-vpc-endpoints"
+  })
+}
+
+# Data source for current region
+data "aws_region" "current" {}

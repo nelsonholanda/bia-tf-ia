@@ -16,6 +16,11 @@ output "vpc_id" {
   value       = module.vpc.vpc_id
 }
 
+output "vpc_cidr_block" {
+  description = "VPC CIDR block"
+  value       = module.vpc.vpc_cidr_block
+}
+
 output "public_subnet_ids" {
   description = "Public subnet IDs"
   value       = module.vpc.subnet_ids
@@ -24,6 +29,11 @@ output "public_subnet_ids" {
 output "private_subnet_ids" {
   description = "Private subnet IDs"
   value       = module.vpc.private_subnet_ids
+}
+
+output "availability_zones" {
+  description = "Availability zones used"
+  value       = module.vpc.availability_zones
 }
 
 # ECS Outputs
@@ -68,11 +78,21 @@ output "alb_target_group_arn" {
   value       = module.alb.target_group_arn
 }
 
+output "alb_zone_id" {
+  description = "ALB hosted zone ID"
+  value       = module.alb.alb_zone_id
+}
+
 # RDS Outputs
 output "rds_endpoint" {
   description = "RDS endpoint"
   value       = module.rds.db_instance_endpoint
   sensitive   = true
+}
+
+output "rds_instance_arn" {
+  description = "RDS instance ARN"
+  value       = module.rds.db_instance_arn
 }
 
 output "rds_kms_key_arn" {
@@ -99,8 +119,63 @@ output "db_password_secret_name" {
   sensitive   = true
 }
 
+output "db_password_secret_arn" {
+  description = "ARN of the database password secret in Secrets Manager"
+  value       = module.rds.db_password_secret_arn
+  sensitive   = true
+}
+
+# WAF Outputs
 output "waf_web_acl_arn" {
   description = "ARN of the WAF Web ACL (production only)"
   value       = var.environment == "prod" ? module.waf.web_acl_arn : null
+}
+
+# Monitoring Outputs
+output "monitoring_dashboard_url" {
+  description = "URL of the CloudWatch dashboard"
+  value       = module.monitoring.dashboard_url
+}
+
+output "sns_topic_arn" {
+  description = "ARN of the SNS topic for alerts"
+  value       = module.monitoring.sns_topic_arn
+}
+
+output "cloudwatch_alarms" {
+  description = "List of CloudWatch alarm names"
+  value       = module.monitoring.alarm_names
+}
+
+# Backup Outputs
+output "backup_vault_arn" {
+  description = "ARN of the backup vault"
+  value       = module.backup.backup_vault_arn
+}
+
+output "backup_plan_arn" {
+  description = "ARN of the backup plan"
+  value       = module.backup.backup_plan_arn
+}
+
+# Application URLs
+output "application_url" {
+  description = "Application URL (ALB DNS name)"
+  value       = "http://${module.alb.alb_dns_name}"
+}
+
+# Environment Summary
+output "environment_summary" {
+  description = "Summary of the deployed environment"
+  value = {
+    environment        = var.environment
+    vpc_cidr           = module.vpc.vpc_cidr_block
+    availability_zones = length(module.vpc.availability_zones)
+    container_insights = local.current_env.enable_container_insights
+    multi_az           = local.current_env.multi_az
+    backup_enabled     = local.current_env.enable_backup
+    waf_enabled        = var.environment == "prod"
+    monitoring_enabled = true
+  }
 }
 

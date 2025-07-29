@@ -21,6 +21,12 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Additional provider for cross-region backup (production only)
+provider "aws" {
+  alias  = "backup_region"
+  region = "us-west-2" # Different region for cross-region backup
+}
+
 # Data sources for existing resources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
@@ -36,7 +42,7 @@ module "kms" {
   tags        = local.common_tags
 }
 
-# VPC Module
+# VPC Module with enhanced networking
 module "vpc" {
   source = "./modules/vpc"
 
@@ -74,25 +80,24 @@ module "cloudwatch" {
   env_config     = local.current_env
 }
 
-# RDS Module
+# RDS Module with enhanced security
 module "rds" {
   source = "./modules/rds"
 
-  environment        = var.environment
-  tags               = local.common_tags
-  env_config         = local.current_env
-  db_identifier      = "bia"
-  security_group_ids = [module.security_groups.bia_rds_sg_id]
-  subnet_ids         = module.vpc.private_subnet_ids
-  rds_kms_key_arn    = module.kms.rds_kms_key_arn
+  environment         = var.environment
+  tags                = local.common_tags
+  env_config          = local.current_env
+  db_identifier       = "bia"
+  security_group_ids  = [module.security_groups.bia_rds_sg_id]
+  subnet_ids          = module.vpc.private_subnet_ids
+  rds_kms_key_arn     = module.kms.rds_kms_key_arn
   secrets_kms_key_arn = module.kms.secrets_kms_key_arn
+  postgres_version    = var.postgres_version
 
   depends_on = [
     module.kms
   ]
 }
-
-
 
 # ALB Module
 module "alb" {
@@ -149,7 +154,7 @@ module "ecs_service" {
   target_group_arn             = module.alb.target_group_arn
 
   # Use Secrets Manager for all database credentials
-  db_password_secret_arn   = module.rds.db_password_secret_arn
+  db_password_secret_arn = module.rds.db_password_secret_arn
 
   depends_on = [
     module.ecs_cluster,
@@ -169,4 +174,43 @@ module "waf" {
   alb_arn     = module.alb.alb_arn
 
   depends_on = [module.alb]
+}
+
+# Monitoring Module with CloudWatch Alarms and Dashboard
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  environment       = var.environment
+  tags              = local.common_tags
+  aws_region        = var.aws_region
+  alert_email       = var.alert_email
+  monitoring_config = local.monitoring_config
+  env_config        = local.current_env
+  alb_arn_suffix    = module.alb.alb_arn_suffix
+
+  depends_on = [
+    module.ecs_service,
+    module.rds,
+    module.alb
+  ]
+}
+
+# Backup Module (enhanced for production)
+module "backup" {
+  source = "./modules/backup"
+
+  environment      = var.environment
+  tags             = local.common_tags
+  env_config       = local.current_env
+  rds_instance_arn = module.rds.db_instance_arn
+  sns_topic_arn    = module.monitoring.sns_topic_arn
+
+  providers = {
+    aws.backup_region = aws.backup_region
+  }
+
+  depends_on = [
+    module.rds,
+    module.monitoring
+  ]
 }

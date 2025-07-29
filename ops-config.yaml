@@ -1,0 +1,190 @@
+# BIA Infrastructure Operations Configuration
+# This file contains operational parameters and settings
+
+project:
+  name: "BIA"
+  owner: "Nelson Holanda"
+  repository: "https://github.com/nelsonholanda/bia-tf-ia"
+  branch: "aws-tf"
+
+environments:
+  dev:
+    name: "development"
+    aws_region: "us-east-1"
+    vpc_cidr: "10.0.0.0/16"
+    backend_config: "backend-dev.hcl"
+    tfvars_file: "terraform.tfvars"
+    monitoring:
+      dashboard_name: "BIA-dev-Dashboard"
+      alarm_prefix: "bia-dev"
+      alert_threshold:
+        cpu: 80
+        memory: 85
+        response_time: 2.0
+        error_rate: 10
+    backup:
+      vault_name: "bia-dev-backup-vault"
+      retention_days: 7
+      schedule: "cron(0 5 ? * * *)"  # 5 AM UTC daily
+    resources:
+      rds_instance_class: "db.t3.micro"
+      ecs_task_min: 1
+      ecs_task_max: 10
+      container_memory: 512
+
+  prod:
+    name: "production"
+    aws_region: "us-east-1"
+    vpc_cidr: "10.1.0.0/16"
+    backend_config: "backend-prod.hcl"
+    tfvars_file: "terraform-prod.tfvars"
+    monitoring:
+      dashboard_name: "BIA-prod-Dashboard"
+      alarm_prefix: "bia-prod"
+      alert_threshold:
+        cpu: 70
+        memory: 80
+        response_time: 2.0
+        error_rate: 5
+    backup:
+      vault_name: "bia-prod-backup-vault"
+      retention_days: 365
+      schedule: "cron(0 5 ? * * *)"  # 5 AM UTC daily
+      cross_region: true
+      cross_region_vault: "bia-prod-backup-vault-cross-region"
+    resources:
+      rds_instance_class: "db.t3.small"
+      ecs_task_min: 2
+      ecs_task_max: 20
+      container_memory: 1024
+    security:
+      waf_enabled: true
+      kms_enabled: true
+      multi_az: true
+
+monitoring:
+  cloudwatch:
+    log_retention_days:
+      dev: 7
+      prod: 30
+    metrics_namespace: "BIA"
+    dashboard_refresh: "1m"
+  
+  alarms:
+    evaluation_periods: 2
+    datapoints_to_alarm: 2
+    treat_missing_data: "notBreaching"
+    
+  notifications:
+    sns_topic_suffix: "-alerts"
+    email_subscription: true
+
+backup:
+  aws_backup:
+    service_role: "AWSBackupDefaultServiceRole"
+    vault_encryption: true
+    cross_region_copy: true  # prod only
+    
+  retention_policy:
+    daily_backups: true
+    weekly_backups: true  # prod only
+    monthly_backups: false
+    
+  recovery_testing:
+    frequency: "monthly"
+    test_instance_class: "db.t3.micro"
+    cleanup_after_hours: 24
+
+security:
+  secrets_manager:
+    rotation_enabled: true  # prod only
+    rotation_days: 30
+    kms_encryption: true
+    
+  kms:
+    key_rotation: true
+    deletion_window: 7
+    
+  waf:
+    rate_limit: 2000
+    geo_blocking:
+      - "CN"  # China
+      - "RU"  # Russia
+      - "KP"  # North Korea
+
+networking:
+  vpc_endpoints:
+    s3: true
+    ecr_api: true  # prod only
+    ecr_dkr: true  # prod only
+    
+  nat_gateways:
+    dev: 0
+    prod: 3  # Multi-AZ
+    
+cost_optimization:
+  spot_instances:
+    dev: true
+    prod: false
+    
+  scheduled_scaling:
+    enabled: false  # Future implementation
+    
+  resource_tagging:
+    cost_center: "Engineering"
+    auto_shutdown: true  # dev only
+
+maintenance:
+  windows:
+    dev: "Anytime"
+    prod: "Sunday 02:00-04:00 UTC"
+    
+  patching:
+    auto_minor_version_upgrade: true
+    maintenance_window: "sun:04:00-sun:05:00"
+    
+  log_rotation:
+    enabled: true
+    retention_policy: "environment_specific"
+
+compliance:
+  soc2:
+    enabled: true  # prod only
+    audit_logging: true
+    
+  data_classification:
+    dev: "Internal"
+    prod: "Confidential"
+    
+  backup_requirements:
+    dev: "Optional"
+    prod: "Required"
+
+operations:
+  scripts:
+    health_check: "scripts/health-check.sh"
+    backup_report: "scripts/backup-report.sh"
+    recovery_test: "scripts/test-backup-recovery.sh"
+    
+  automation:
+    github_actions: true
+    manual_approval_prod: true
+    
+  documentation:
+    technical_manual: "TECHNICAL_OPERATIONS_MANUAL.md"
+    improvements_summary: "IMPROVEMENTS_SUMMARY.md"
+    implementation_status: "IMPLEMENTATION_COMPLETE.md"
+
+contacts:
+  infrastructure_owner: "Nelson Holanda"
+  application_team: "Development Team"
+  aws_support: "Enterprise Support"
+  emergency_contact: "24/7 On-call"
+
+urls:
+  github_repository: "https://github.com/nelsonholanda/bia-tf-ia"
+  aws_console: "https://console.aws.amazon.com"
+  cloudwatch_dashboard:
+    dev: "https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=BIA-dev-Dashboard"
+    prod: "https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=BIA-prod-Dashboard"
+  backup_console: "https://console.aws.amazon.com/backup/home?region=us-east-1#/backupvaults"

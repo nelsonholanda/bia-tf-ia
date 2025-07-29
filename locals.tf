@@ -12,7 +12,7 @@ locals {
       instance_type           = "t3.micro"
       rds_instance_class      = "db.t3.micro"
       container_cpu           = 2048
-      container_memory        = 317 # Increased for better performance
+      container_memory        = 307 # Increased for better performance
       multi_az                = false
       backup_retention_period = 7 # Increased from 1 day
       # ECS Tasks Auto Scaling
@@ -60,9 +60,9 @@ locals {
       cpu_scale_out_cooldown = 600  # Longer cooldown for stability
       cpu_scale_in_cooldown  = 900  # Even longer for scale-in
       # EC2 Instances Auto Scaling
-      instance_min_capacity     = 2 # Minimum 2 instances for HA
-      instance_max_capacity     = 6 # Higher max for production
-      instance_desired_capacity = 2 # Start with 2 instances for HA
+      instance_min_capacity     = 1 # Minimum 2 instances for HA
+      instance_max_capacity     = 4 # Higher max for production
+      instance_desired_capacity = 1 # Start with 2 instances for HA
       use_private_subnets       = true
       create_nat_gateway        = true
       # Production-specific settings

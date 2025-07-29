@@ -1,38 +1,9 @@
 # Main Terraform configuration for BIA ECS Infrastructure
-terraform {
-  required_version = ">= 1.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 6.5.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6.0"
-    }
-  }
-
-  backend "s3" {
-    # Backend configuration will be provided via -backend-config
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-
-# Additional provider for cross-region backup (production only)
-provider "aws" {
-  alias  = "backup_region"
-  region = "us-west-2" # Different region for cross-region backup
-}
+# Este projeto roda exclusivamente no HCP Terraform Cloud
 
 # Data sources for existing resources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
-
-# Secrets cleanup is handled by the cleanup-secrets.sh script
-# which runs before terraform apply in the deploy.sh script
 
 # KMS Module (for production encryption)
 module "kms" {
@@ -42,7 +13,7 @@ module "kms" {
   tags        = local.common_tags
 }
 
-# VPC Module with enhanced networking
+# VPC Module
 module "vpc" {
   source = "./modules/vpc"
 
@@ -80,7 +51,7 @@ module "cloudwatch" {
   env_config     = local.current_env
 }
 
-# RDS Module with enhanced security
+# RDS Module
 module "rds" {
   source = "./modules/rds"
 
@@ -94,9 +65,7 @@ module "rds" {
   secrets_kms_key_arn = module.kms.secrets_kms_key_arn
   postgres_version    = var.postgres_version
 
-  depends_on = [
-    module.kms
-  ]
+  depends_on = [module.kms]
 }
 
 # ALB Module
@@ -152,9 +121,7 @@ module "ecs_service" {
   task_execution_role_arn      = module.iam.ecs_task_execution_role_arn
   capacity_provider_name       = module.ecs_cluster.capacity_provider_name
   target_group_arn             = module.alb.target_group_arn
-
-  # Use Secrets Manager for all database credentials
-  db_password_secret_arn = module.rds.db_password_secret_arn
+  db_password_secret_arn       = module.rds.db_password_secret_arn
 
   depends_on = [
     module.ecs_cluster,
@@ -174,43 +141,4 @@ module "waf" {
   alb_arn     = module.alb.alb_arn
 
   depends_on = [module.alb]
-}
-
-# Monitoring Module with CloudWatch Alarms and Dashboard
-module "monitoring" {
-  source = "./modules/monitoring"
-
-  environment       = var.environment
-  tags              = local.common_tags
-  aws_region        = var.aws_region
-  alert_email       = var.alert_email
-  monitoring_config = local.monitoring_config
-  env_config        = local.current_env
-  alb_arn_suffix    = module.alb.alb_arn_suffix
-
-  depends_on = [
-    module.ecs_service,
-    module.rds,
-    module.alb
-  ]
-}
-
-# Backup Module (enhanced for production)
-module "backup" {
-  source = "./modules/backup"
-
-  environment      = var.environment
-  tags             = local.common_tags
-  env_config       = local.current_env
-  rds_instance_arn = module.rds.db_instance_arn
-  sns_topic_arn    = module.monitoring.sns_topic_arn
-
-  providers = {
-    aws.backup_region = aws.backup_region
-  }
-
-  depends_on = [
-    module.rds,
-    module.monitoring
-  ]
 }

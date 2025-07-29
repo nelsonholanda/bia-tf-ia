@@ -37,6 +37,9 @@ locals {
       # Cost optimization
       enable_spot_instances    = true
       spot_allocation_strategy = "diversified"
+      # Backup configuration
+      backup_retention_days    = 7
+      enable_backup           = true
     }
     prod = {
       # Network Configuration

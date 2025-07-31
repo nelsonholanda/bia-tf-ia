@@ -107,8 +107,12 @@ resource "aws_db_instance" "bia" {
   multi_az                = var.env_config.multi_az
   backup_retention_period = var.env_config.backup_retention_period
   performance_insights_enabled = try(var.env_config.enable_performance_insights, false)
-  backup_window           = var.backup_window
-  maintenance_window      = var.maintenance_window
+  backup_window           = try(var.env_config.backup_window, var.backup_window)
+  maintenance_window      = try(var.env_config.maintenance_window, var.maintenance_window)
+  
+  # Enable automated backups
+  delete_automated_backups = try(var.env_config.delete_automated_backups, true)
+  copy_tags_to_snapshot   = try(var.env_config.copy_tags_to_snapshot, true)
 
   skip_final_snapshot       = var.environment == "prod" ? false : true
   final_snapshot_identifier = var.environment == "prod" ? "bia-${var.environment}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null

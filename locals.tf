@@ -10,7 +10,12 @@ locals {
       container_cpu           = 1024
       container_memory        = 307
       multi_az                = false
-      backup_retention_period = 1
+      backup_retention_period = 7
+      # Backup configuration
+      backup_window          = "03:00-04:00"  # UTC - 11PM-12AM EST
+      maintenance_window     = "sun:04:00-sun:05:00"  # UTC - Sunday 12AM-1AM EST
+      copy_tags_to_snapshot  = true
+      delete_automated_backups = true
       # ECS Tasks Auto Scaling
       task_min_capacity      = 1
       task_max_capacity      = 10
@@ -32,6 +37,11 @@ locals {
       container_memory        = 307  # Increased for production
       multi_az                = true # High availability for production
       backup_retention_period = 30   # Extended backup retention
+      # Backup configuration
+      backup_window          = "03:00-04:00"  # UTC - 11PM-12AM EST
+      maintenance_window     = "sun:04:00-sun:05:00"  # UTC - Sunday 12AM-1AM EST
+      copy_tags_to_snapshot  = true
+      delete_automated_backups = true
       # ECS Tasks Auto Scaling - Conservative for production
       task_min_capacity      = 1    # Minimum 1 task for cost optimization
       task_max_capacity      = 20   # Higher max for production load

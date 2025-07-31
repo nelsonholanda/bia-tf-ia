@@ -1,0 +1,72 @@
+{
+    "mcpServers": {
+        "shell": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-shell@latest"
+            ],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "INFO",
+                "PYTHONUNBUFFERED": "1"
+            },
+            "disabled": false,
+            "autoApprove": [
+                "run_command"
+            ]
+        },
+        "git": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-git@latest"
+            ],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "INFO",
+                "PYTHONUNBUFFERED": "1"
+            },
+            "disabled": false,
+            "autoApprove": [
+                "git_status",
+                "git_log",
+                "git_diff",
+                "git_show",
+                "git_branch",
+                "git_add",
+                "git_commit",
+                "git_push",
+                "git_pull"
+            ]
+        },
+        "sqlite": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-sqlite@latest"
+            ],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "INFO",
+                "PYTHONUNBUFFERED": "1"
+            },
+            "disabled": false,
+            "autoApprove": [
+                "execute_query",
+                "list_tables",
+                "describe_table"
+            ]
+        },
+        "postgres": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-postgres@latest"
+            ],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "INFO",
+                "PYTHONUNBUFFERED": "1"
+            },
+            "disabled": false,
+            "autoApprove": [
+                "execute_query",
+                "list_tables",
+                "describe_table"
+            ]
+        }
+    }
+}

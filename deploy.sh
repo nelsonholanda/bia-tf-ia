@@ -2,6 +2,8 @@
 
 # Script para deploy da infraestrutura BIA com múltiplos ambientes
 # Uso: ./deploy.sh [dev|prod] [plan|apply|destroy]
+# 
+# State locking: Uses S3 object locking (DynamoDB no longer required)
 
 set -e
 

@@ -14,7 +14,7 @@ Infraestrutura como código para a aplicação BIA usando Terraform, com suporte
 | **WAF** | ❌ Desabilitado | ✅ Habilitado |
 | **KMS** | ❌ Desabilitado | ✅ Habilitado |
 | **Container Insights** | ❌ Desabilitado | ✅ Habilitado |
-| **Backup Retention** | 1 dia | 30 dias |
+| **Backup Retention** | 7 dias | 30 dias |
 
 ## 📁 Estrutura do Projeto
 
@@ -30,7 +30,10 @@ bia-kiro-tf/
 ├── 📄 backend-dev.hcl               # Backend S3 para dev
 ├── 📄 backend-prod.hcl              # Backend S3 para prod
 ├── 🔧 deploy.sh                     # Script de deploy
-├── 🔧 setup-dynamodb-lock.sh        # Script para configurar state lock
+├── 📄 ARCHITECTURE.md               # Documentação da arquitetura
+├── 📄 MIGRATION-S3-LOCKING.md       # Documentação da migração S3
+├── 📄 BACKUP-STRATEGY.md            # Estratégia de backup e recuperação
+
 ├── 📁 modules/                      # Módulos Terraform
 │   ├── alb/                         # Application Load Balancer
 │   ├── cloudwatch/                  # Logs e monitoramento
@@ -59,8 +62,8 @@ cd bia-kiro-tf
 # Configurar AWS CLI
 aws configure
 
-# Configurar DynamoDB para state locking
-./setup-dynamodb-lock.sh
+# Verificar se o bucket S3 existe e tem versionamento habilitado
+aws s3api get-bucket-versioning --bucket tf-nh
 ```
 
 ### 2. Deploy para Desenvolvimento
@@ -115,17 +118,24 @@ prod = {
 
 ### Backend Configuration
 
-O projeto usa S3 para armazenar o state do Terraform com DynamoDB para locking:
+O projeto usa S3 para armazenar o state do Terraform com S3 object locking para controle de concorrência:
 
 - **Desenvolvimento**: `backend-dev.hcl`
 - **Produção**: `backend-prod.hcl`
 
 ### State Locking
 
-O projeto utiliza DynamoDB para state locking, prevenindo execuções simultâneas:
+O projeto utiliza S3 object locking nativo, eliminando a necessidade de DynamoDB:
 
-- **Dev**: `terraform-state-lock-bia-dev`
-- **Prod**: `terraform-state-lock-bia-prod`
+- **Bucket**: `tf-nh`
+- **Dev State**: `kiro-tf-bia/dev/terraform.tfstate`
+- **Prod State**: `kiro-tf-bia/prod/terraform.tfstate`
+
+**Benefícios da migração para S3-only:**
+- ✅ Redução de custos (sem DynamoDB)
+- ✅ Simplificação da infraestrutura
+- ✅ Locking nativo do S3
+- ✅ Menor complexidade de configuração
 
 ## 🏷️ Tags Padrão
 
@@ -175,11 +185,37 @@ O projeto inclui workflows do GitHub Actions para:
 
 ## 🆘 Troubleshooting
 
-Para problemas ou dúvidas:
-1. Verificar logs do GitHub Actions
-2. Consultar documentação específica dos módulos
-3. Verificar configurações de backend
-4. Validar permissões AWS
+### Problemas Comuns
+
+#### State Lock Issues
+```bash
+# Se houver problemas de lock, verificar:
+terraform force-unlock <LOCK_ID>
+
+# Verificar estado do backend
+terraform init -backend-config=backend-<env>.hcl
+```
+
+#### Secrets Manager
+```bash
+# Limpar secrets órfãos
+aws secretsmanager list-secrets --include-planned-deletion
+aws secretsmanager delete-secret --secret-id <ARN> --force-delete-without-recovery
+```
+
+#### Recursos Órfãos
+```bash
+# Verificar recursos não gerenciados
+aws ecs list-clusters
+aws rds describe-db-instances
+```
+
+### Documentação Adicional
+1. **Arquitetura**: Ver `ARCHITECTURE.md`
+2. **Migração S3**: Ver `MIGRATION-S3-LOCKING.md`
+3. **Backup Strategy**: Ver `BACKUP-STRATEGY.md`
+4. **Logs**: GitHub Actions workflows
+5. **Módulos**: Documentação em cada módulo
 
 ## 📝 Contribuição
 

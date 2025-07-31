@@ -23,13 +23,13 @@ resource "aws_secretsmanager_secret" "db_password" {
   name                    = "bia-${var.environment}-secrets"
   description             = "Database credentials for BIA ${var.environment} environment"
   recovery_window_in_days = var.environment == "prod" ? 30 : 7
-  kms_key_id             = var.secrets_kms_key_arn
-  
+  kms_key_id              = var.secrets_kms_key_arn
+
   # Force replacement if there are conflicts (helps with orphaned secrets)
   lifecycle {
     create_before_destroy = false
   }
-  
+
   tags = merge(var.tags, {
     Name        = "bia-${var.environment}-secrets"
     Environment = var.environment
@@ -95,7 +95,7 @@ resource "aws_db_instance" "bia" {
   max_allocated_storage = var.max_allocated_storage
   storage_type          = "gp2"
   storage_encrypted     = var.environment == "prod" ? true : false
-  kms_key_id           = var.rds_kms_key_arn
+  kms_key_id            = var.rds_kms_key_arn
 
   db_name  = var.database_name
   username = var.db_username
@@ -104,15 +104,15 @@ resource "aws_db_instance" "bia" {
   vpc_security_group_ids = var.security_group_ids
   db_subnet_group_name   = aws_db_subnet_group.bia.name
 
-  multi_az                = var.env_config.multi_az
-  backup_retention_period = var.env_config.backup_retention_period
+  multi_az                     = var.env_config.multi_az
+  backup_retention_period      = var.env_config.backup_retention_period
   performance_insights_enabled = try(var.env_config.enable_performance_insights, false)
-  backup_window           = try(var.env_config.backup_window, var.backup_window)
-  maintenance_window      = try(var.env_config.maintenance_window, var.maintenance_window)
-  
+  backup_window                = try(var.env_config.backup_window, var.backup_window)
+  maintenance_window           = try(var.env_config.maintenance_window, var.maintenance_window)
+
   # Enable automated backups
   delete_automated_backups = try(var.env_config.delete_automated_backups, true)
-  copy_tags_to_snapshot   = try(var.env_config.copy_tags_to_snapshot, true)
+  copy_tags_to_snapshot    = try(var.env_config.copy_tags_to_snapshot, true)
 
   skip_final_snapshot       = var.environment == "prod" ? false : true
   final_snapshot_identifier = var.environment == "prod" ? "bia-${var.environment}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null

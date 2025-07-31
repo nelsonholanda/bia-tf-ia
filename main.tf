@@ -78,13 +78,13 @@ module "cloudwatch" {
 module "rds" {
   source = "./modules/rds"
 
-  environment        = var.environment
-  tags               = local.common_tags
-  env_config         = local.current_env
-  db_identifier      = "bia"
-  security_group_ids = [module.security_groups.bia_rds_sg_id]
-  subnet_ids         = module.vpc.private_subnet_ids
-  rds_kms_key_arn    = module.kms.rds_kms_key_arn
+  environment         = var.environment
+  tags                = local.common_tags
+  env_config          = local.current_env
+  db_identifier       = "bia"
+  security_group_ids  = [module.security_groups.bia_rds_sg_id]
+  subnet_ids          = module.vpc.private_subnet_ids
+  rds_kms_key_arn     = module.kms.rds_kms_key_arn
   secrets_kms_key_arn = module.kms.secrets_kms_key_arn
 
   depends_on = [
@@ -149,7 +149,7 @@ module "ecs_service" {
   target_group_arn             = module.alb.target_group_arn
 
   # Use Secrets Manager for all database credentials
-  db_password_secret_arn   = module.rds.db_password_secret_arn
+  db_password_secret_arn = module.rds.db_password_secret_arn
 
   depends_on = [
     module.ecs_cluster,

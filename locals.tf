@@ -12,9 +12,9 @@ locals {
       multi_az                = false
       backup_retention_period = 7
       # Backup configuration
-      backup_window          = "03:00-04:00"  # UTC - 11PM-12AM EST
-      maintenance_window     = "sun:04:00-sun:05:00"  # UTC - Sunday 12AM-1AM EST
-      copy_tags_to_snapshot  = true
+      backup_window            = "03:00-04:00"         # UTC - 11PM-12AM EST
+      maintenance_window       = "sun:04:00-sun:05:00" # UTC - Sunday 12AM-1AM EST
+      copy_tags_to_snapshot    = true
       delete_automated_backups = true
       # ECS Tasks Auto Scaling
       task_min_capacity      = 1
@@ -38,9 +38,9 @@ locals {
       multi_az                = true # High availability for production
       backup_retention_period = 30   # Extended backup retention
       # Backup configuration
-      backup_window          = "03:00-04:00"  # UTC - 11PM-12AM EST
-      maintenance_window     = "sun:04:00-sun:05:00"  # UTC - Sunday 12AM-1AM EST
-      copy_tags_to_snapshot  = true
+      backup_window            = "03:00-04:00"         # UTC - 11PM-12AM EST
+      maintenance_window       = "sun:04:00-sun:05:00" # UTC - Sunday 12AM-1AM EST
+      copy_tags_to_snapshot    = true
       delete_automated_backups = true
       # ECS Tasks Auto Scaling - Conservative for production
       task_min_capacity      = 1    # Minimum 1 task for cost optimization
@@ -57,7 +57,7 @@ locals {
       create_nat_gateway        = true
       # Production-specific settings
       enable_container_insights   = true
-      enable_deletion_protection  = false  # Disabled for easier management
+      enable_deletion_protection  = false # Disabled for easier management
       enable_final_snapshot       = true
       log_retention_days          = 30
       enable_performance_insights = true

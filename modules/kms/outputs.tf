@@ -17,3 +17,13 @@ output "secrets_kms_key_id" {
   description = "ID of the Secrets Manager KMS key"
   value       = var.environment == "prod" ? aws_kms_key.secrets[0].key_id : null
 }
+
+output "backup_kms_key_arn" {
+  description = "ARN of the Backup KMS key"
+  value       = var.environment == "prod" ? aws_kms_key.backup[0].arn : null
+}
+
+output "backup_kms_key_id" {
+  description = "ID of the Backup KMS key"
+  value       = var.environment == "prod" ? aws_kms_key.backup[0].key_id : null
+}

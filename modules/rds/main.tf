@@ -119,7 +119,9 @@ resource "aws_db_instance" "bia" {
   deletion_protection       = try(var.env_config.enable_deletion_protection, false)
 
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-db"
+    Name          = "bia-${var.environment}-db"
+    Environment   = var.environment
+    BackupEnabled = "true"
   })
 
 

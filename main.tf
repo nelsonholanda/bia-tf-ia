@@ -21,6 +21,12 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Provider for cross-region backup (sa-east-1)
+provider "aws" {
+  alias  = "sa_east_1"
+  region = "sa-east-1"
+}
+
 # Data sources for existing resources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
@@ -169,4 +175,25 @@ module "waf" {
   alb_arn     = module.alb.alb_arn
 
   depends_on = [module.alb]
+}
+
+# Backup Module (Cross-Region backup to sa-east-1)
+module "backup" {
+  source = "./modules/backup"
+
+  environment                 = var.environment
+  tags                       = local.common_tags
+  backup_kms_key_arn         = module.kms.backup_kms_key_arn
+  cross_region_kms_key_arn   = module.kms.backup_kms_key_arn # Use same key for cross-region
+  rds_instance_arns          = [module.rds.db_instance_arn]
+  reports_s3_bucket          = "tf-nh"
+
+  providers = {
+    aws.sa_east_1 = aws.sa_east_1
+  }
+
+  depends_on = [
+    module.kms,
+    module.rds
+  ]
 }

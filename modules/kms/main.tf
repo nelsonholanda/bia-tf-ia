@@ -104,5 +104,60 @@ resource "aws_kms_alias" "secrets" {
   target_key_id = aws_kms_key.secrets[0].key_id
 }
 
+# KMS Key for AWS Backup
+resource "aws_kms_key" "backup" {
+  count                   = var.environment == "prod" ? 1 : 0
+  description             = "KMS key for AWS Backup encryption in ${var.environment} environment"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow AWS Backup Service"
+        Effect = "Allow"
+        Principal = {
+          Service = "backup.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = [
+              "backup.us-east-1.amazonaws.com",
+              "backup.sa-east-1.amazonaws.com"
+            ]
+          }
+        }
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Name = "bia-${var.environment}-backup-kms-key"
+  })
+}
+
+resource "aws_kms_alias" "backup" {
+  count         = var.environment == "prod" ? 1 : 0
+  name          = "alias/bia-${var.environment}-backup"
+  target_key_id = aws_kms_key.backup[0].key_id
+}
+
 # Data source for current AWS account
 data "aws_caller_identity" "current" {}

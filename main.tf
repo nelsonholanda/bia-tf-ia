@@ -57,7 +57,7 @@ module "iam" {
 
   environment  = var.environment
   tags         = local.common_tags
-  cluster_name = var.cluster_name
+  cluster_name = var.ecs_cluster_name
 }
 
 # Security Groups Module
@@ -67,7 +67,7 @@ module "security_groups" {
   environment  = var.environment
   tags         = local.common_tags
   vpc_id       = module.vpc.vpc_id
-  cluster_name = var.cluster_name
+  cluster_name = var.ecs_cluster_name
 }
 
 # CloudWatch Module
@@ -76,7 +76,7 @@ module "cloudwatch" {
 
   environment    = var.environment
   tags           = local.common_tags
-  log_group_name = var.log_group_name
+  log_group_name = var.cloudwatch_log_group_name
   env_config     = local.current_env
 }
 
@@ -119,12 +119,12 @@ module "ecs_cluster" {
   environment          = var.environment
   tags                 = local.common_tags
   env_config           = local.current_env
-  cluster_name         = var.cluster_name
+  cluster_name         = var.ecs_cluster_name
   vpc_id               = module.vpc.vpc_id
   subnet_ids           = module.vpc.ecs_subnet_ids
   security_group_id    = module.security_groups.ecs_security_group_id
   instance_profile_arn = module.iam.ecs_instance_profile_arn
-  key_name             = var.key_name
+  key_name             = var.ec2_key_pair_name
 
   depends_on = [
     module.vpc,
@@ -141,14 +141,14 @@ module "ecs_service" {
   tags                         = local.common_tags
   env_config                   = local.current_env
   cluster_id                   = module.ecs_cluster.cluster_id
-  cluster_name                 = var.cluster_name
-  service_name                 = var.service_name
-  task_definition_family       = var.task_definition_family
-  container_name               = var.container_name
+  cluster_name                 = var.ecs_cluster_name
+  service_name                 = var.ecs_service_name
+  task_definition_family       = var.ecs_task_definition_family
+  container_name               = var.app_container_name
   container_image              = var.ecr_repository_url
-  container_cpu                = var.container_cpu
-  container_memory_reservation = var.container_memory_reservation
-  container_port               = var.container_port
+  container_cpu                = var.app_container_cpu
+  container_memory_reservation = var.app_container_memory_reservation
+  container_port               = var.app_container_port
   log_group_name               = module.cloudwatch.log_group_name
   task_execution_role_arn      = module.iam.ecs_task_execution_role_arn
   capacity_provider_name       = module.ecs_cluster.capacity_provider_name

@@ -22,62 +22,62 @@ variable "aws_region" {
   }
 }
 
-variable "cluster_name" {
-  description = "ECS cluster name"
+variable "ecs_cluster_name" {
+  description = "Name of the ECS cluster"
   type        = string
   default     = "bia-cluster"
 }
 
-variable "service_name" {
-  description = "ECS service name"
+variable "ecs_service_name" {
+  description = "Name of the ECS service"
   type        = string
   default     = "bia-service"
 }
 
-variable "task_definition_family" {
-  description = "Task definition family name"
+variable "ecs_task_definition_family" {
+  description = "Family name for the ECS task definition"
   type        = string
   default     = "bia-task"
 }
 
-variable "container_name" {
-  description = "Container name"
+variable "app_container_name" {
+  description = "Name of the application container"
   type        = string
   default     = "bia"
 }
 
-variable "container_cpu" {
-  description = "Container CPU units (will be overridden by environment config)"
+variable "app_container_cpu" {
+  description = "CPU units allocated to the container (overridden by environment config)"
   type        = number
   default     = 512
 }
 
-variable "container_memory_reservation" {
-  description = "Container memory reservation in MB (will be overridden by environment config)"
+variable "app_container_memory_reservation" {
+  description = "Memory reservation in MB for the container (overridden by environment config)"
   type        = number
   default     = 307
 }
 
-variable "container_port" {
-  description = "Container port"
+variable "app_container_port" {
+  description = "Port exposed by the application container"
   type        = number
   default     = 8080
 }
 
 variable "ecr_repository_url" {
-  description = "ECR repository URL (external, not managed by Terraform)"
+  description = "URL of the ECR repository containing the application image"
   type        = string
   default     = "194722426008.dkr.ecr.us-east-1.amazonaws.com/bia"
 }
 
-variable "log_group_name" {
-  description = "CloudWatch log group name"
+variable "cloudwatch_log_group_name" {
+  description = "Name of the CloudWatch log group for application logs"
   type        = string
   default     = "/ecs/bia"
 }
 
-variable "key_name" {
-  description = "EC2 Key Pair name"
+variable "ec2_key_pair_name" {
+  description = "Name of the EC2 key pair for instance access"
   type        = string
   default     = "nholanda"
 }

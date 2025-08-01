@@ -80,6 +80,18 @@ locals {
     DataClass   = var.environment == "prod" ? "Confidential" : "Internal"
   }
 
-  # Environment-specific naming
-  name_prefix = "bia-${var.environment}"
+  # Environment-specific naming convention
+  resource_name_prefix = "bia-${var.environment}"
+  
+  # Standardized resource naming
+  naming = {
+    vpc                = "${local.resource_name_prefix}-vpc"
+    cluster            = "${local.resource_name_prefix}-cluster"
+    service            = "${local.resource_name_prefix}-service"
+    task_definition    = "${local.resource_name_prefix}-task"
+    load_balancer      = "${local.resource_name_prefix}-alb"
+    target_group       = "${local.resource_name_prefix}-tg"
+    database           = "${local.resource_name_prefix}-db"
+    log_group          = "/ecs/${local.resource_name_prefix}"
+  }
 }

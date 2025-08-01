@@ -52,21 +52,4 @@
                 "describe_table"
             ]
         },
-        "postgres": {
-            "command": "uvx",
-            "args": [
-                "mcp-server-postgres@latest"
-            ],
-            "env": {
-                "FASTMCP_LOG_LEVEL": "INFO",
-                "PYTHONUNBUFFERED": "1"
-            },
-            "disabled": false,
-            "autoApprove": [
-                "execute_query",
-                "list_tables",
-                "describe_table"
-            ]
-        }
-    }
 }

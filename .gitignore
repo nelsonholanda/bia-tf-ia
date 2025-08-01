@@ -60,4 +60,4 @@ terraform.tfstate.d/
 .kiro/cache/
 
 # Ignore import scripts (may contain sensitive data)
-import-*.sh
+import-*.shsqlite_mcp_server.db

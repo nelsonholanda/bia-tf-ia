@@ -202,11 +202,14 @@ aws configure
 
 #### 3. State lock
 ```bash
-# Verificar locks ativos
-aws dynamodb scan --table-name terraform-state-lock-bia-prod
+# Verificar locks ativos (S3 object locking)
+aws s3api head-object --bucket tf-nh --key bia-prod/terraform.tfstate
 
 # Force unlock (CUIDADO!)
 terraform force-unlock <LOCK_ID>
+
+# Verificar configuração do bucket
+aws s3api get-object-lock-configuration --bucket tf-nh
 ```
 
 #### 4. Backup falhou

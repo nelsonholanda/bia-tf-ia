@@ -85,10 +85,10 @@ output "rds_instance_kms_key_arn" {
 output "security_group_ids" {
   description = "Map of security group IDs by purpose"
   value = {
-    ecs_service = module.security_groups.bia_dev_sg_id
-    rds_database = module.security_groups.bia_rds_sg_id
+    ecs_service       = module.security_groups.bia_dev_sg_id
+    rds_database      = module.security_groups.bia_rds_sg_id
     alb_load_balancer = module.security_groups.bia_alb_sg_id
-    ec2_instances = module.security_groups.bia_ec2_sg_id
+    ec2_instances     = module.security_groups.bia_ec2_sg_id
   }
 }
 

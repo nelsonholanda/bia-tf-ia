@@ -1,12 +1,13 @@
 # Security Groups Module
 
-# Security Group for ECS
+# Security Group for ECS Service (alias for dev environment)
 resource "aws_security_group" "bia_dev" {
-  name        = "bia-${var.environment}-ecs"
-  description = "Security group for BIA ${var.environment} environment"
+  name        = "bia-${var.environment}-ecs-service"
+  description = "Security group for BIA ECS service in ${var.environment} environment"
   vpc_id      = var.vpc_id
 
   egress {
+    description = "All outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -14,37 +15,40 @@ resource "aws_security_group" "bia_dev" {
   }
 
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-ecs"
+    Name = "bia-${var.environment}-ecs-service"
+    Purpose = "ecs-service"
   })
 }
 
-# Security Group for RDS
+# Security Group for RDS Database
 resource "aws_security_group" "bia_rds" {
-  name        = "bia-${var.environment}-rds"
-  description = "Security group for BIA RDS database in ${var.environment}"
+  name        = "bia-${var.environment}-rds-database"
+  description = "Security group for BIA RDS PostgreSQL database in ${var.environment} environment"
   vpc_id      = var.vpc_id
 
   ingress {
-    description     = "PostgreSQL from ECS instances"
+    description     = "PostgreSQL access from ECS instances"
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.bia_ec2.id]
   }
-  # RDS doesn't need outbound access - removed egress rule
+  
+  # RDS doesn't need outbound access - no egress rules
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-rds"
+    Name = "bia-${var.environment}-rds-database"
+    Purpose = "rds-database"
   })
 }
 
-# Security Group for ALB
+# Security Group for Application Load Balancer
 resource "aws_security_group" "bia_alb" {
-  name        = "bia-${var.environment}-alb"
-  description = "Security group for BIA Application Load Balancer in ${var.environment}"
+  name        = "bia-${var.environment}-alb-load-balancer"
+  description = "Security group for BIA Application Load Balancer in ${var.environment} environment"
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "HTTP from internet"
+    description = "HTTP traffic from internet"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"

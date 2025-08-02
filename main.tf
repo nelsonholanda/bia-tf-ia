@@ -181,12 +181,12 @@ module "waf" {
 module "backup" {
   source = "./modules/backup"
 
-  environment                 = var.environment
-  tags                       = local.common_tags
-  backup_kms_key_arn         = module.kms.backup_kms_key_arn
-  cross_region_kms_key_arn   = module.kms.backup_kms_key_arn # Use same key for cross-region
-  rds_instance_arns          = [module.rds.db_instance_arn]
-  reports_s3_bucket          = "tf-nh"
+  environment              = var.environment
+  tags                     = local.common_tags
+  backup_kms_key_arn       = module.kms.backup_kms_key_arn
+  cross_region_kms_key_arn = module.kms.backup_kms_key_arn # Use same key for cross-region
+  rds_instance_arns        = [module.rds.db_instance_arn]
+  reports_s3_bucket        = "tf-nh"
 
   providers = {
     aws.sa_east_1 = aws.sa_east_1

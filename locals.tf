@@ -82,16 +82,58 @@ locals {
 
   # Environment-specific naming convention
   resource_name_prefix = "bia-${var.environment}"
-  
-  # Standardized resource naming
+
+  # Standardized resource naming following terraform-best-practices.com
   naming = {
-    vpc                = "${local.resource_name_prefix}-vpc"
-    cluster            = "${local.resource_name_prefix}-cluster"
-    service            = "${local.resource_name_prefix}-service"
-    task_definition    = "${local.resource_name_prefix}-task"
-    load_balancer      = "${local.resource_name_prefix}-alb"
-    target_group       = "${local.resource_name_prefix}-tg"
-    database           = "${local.resource_name_prefix}-db"
-    log_group          = "/ecs/${local.resource_name_prefix}"
+    # Network resources
+    vpc                 = "${local.resource_name_prefix}-vpc"
+    internet_gateway    = "${local.resource_name_prefix}-igw"
+    nat_gateway         = "${local.resource_name_prefix}-nat"
+    route_table_public  = "${local.resource_name_prefix}-rt-public"
+    route_table_private = "${local.resource_name_prefix}-rt-private"
+
+    # Compute resources
+    ecs_cluster         = "${local.resource_name_prefix}-cluster"
+    ecs_service         = "${local.resource_name_prefix}-service"
+    ecs_task_definition = "${local.resource_name_prefix}-task"
+    auto_scaling_group  = "${local.resource_name_prefix}-asg"
+    launch_template     = "${local.resource_name_prefix}-lt"
+
+    # Load balancing
+    application_load_balancer = "${local.resource_name_prefix}-alb"
+    target_group              = "${local.resource_name_prefix}-tg"
+
+    # Database
+    rds_instance        = "${local.resource_name_prefix}-db"
+    rds_subnet_group    = "${local.resource_name_prefix}-db-subnet-group"
+    rds_parameter_group = "${local.resource_name_prefix}-db-params"
+
+    # Security
+    security_group_alb = "${local.resource_name_prefix}-sg-alb"
+    security_group_ecs = "${local.resource_name_prefix}-sg-ecs"
+    security_group_rds = "${local.resource_name_prefix}-sg-rds"
+    waf_web_acl        = "${local.resource_name_prefix}-waf"
+
+    # Storage & Backup
+    s3_bucket_backup = "${local.resource_name_prefix}-backup"
+    backup_vault     = "${local.resource_name_prefix}-vault"
+    backup_plan      = "${local.resource_name_prefix}-plan"
+
+    # Monitoring & Logging
+    cloudwatch_log_group = "/aws/ecs/${local.resource_name_prefix}"
+    cloudwatch_alarm     = "${local.resource_name_prefix}-alarm"
+
+    # IAM
+    iam_role_ecs_task_execution = "${local.resource_name_prefix}-ecs-task-execution-role"
+    iam_role_ecs_instance       = "${local.resource_name_prefix}-ecs-instance-role"
+    iam_role_backup             = "${local.resource_name_prefix}-backup-role"
+
+    # KMS
+    kms_key_rds     = "${local.resource_name_prefix}-kms-rds"
+    kms_key_secrets = "${local.resource_name_prefix}-kms-secrets"
+    kms_key_backup  = "${local.resource_name_prefix}-kms-backup"
+
+    # Secrets
+    secret_rds_password = "${local.resource_name_prefix}-rds-password"
   }
 }

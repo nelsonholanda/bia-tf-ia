@@ -5,6 +5,31 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-08-01
+
+### 🚀 Added
+- **Secret Rotation**: Implementada rotação automática de senhas RDS para produção
+- **Lambda Function**: Função Lambda para rotação segura de credenciais
+- **Terraform Best Practices**: Aplicadas convenções de nomenclatura do terraform-best-practices.com
+- **Variable Validation**: Adicionadas validações para variáveis Terraform
+- **Structured Variables**: Reorganização das variáveis por categoria
+
+### 🔄 Changed
+- **locals.tf**: Nomenclatura padronizada seguindo melhores práticas
+- **variables.tf**: Estrutura organizada com validações e seções
+- **RDS Module**: Implementada rotação de secrets (TODO resolvido)
+- **TECHNICAL_GUIDE.md**: Atualizada seção de troubleshooting para S3 locking
+
+### 🔧 Fixed
+- **State Locking**: Comandos de troubleshooting atualizados para S3 object locking
+- **Secret Management**: Rotação automática de credenciais em produção
+- **Naming Conventions**: Padronização completa de nomenclatura
+
+### 🔒 Security
+- **Automated Rotation**: Rotação de senhas a cada 30 dias em produção
+- **Lambda Security**: IAM roles com least privilege para rotação
+- **KMS Integration**: Criptografia de secrets durante rotação
+
 ## [2.1.0] - 2025-07-30
 
 ### 🚀 Added

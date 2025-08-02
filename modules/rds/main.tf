@@ -80,8 +80,153 @@ resource "aws_secretsmanager_secret_version" "db_password_updated" {
   depends_on = [aws_db_instance.bia, aws_secretsmanager_secret_version.db_password]
 }
 
-# TODO: Add secret rotation configuration after initial deployment
-# This will be implemented in a future update to avoid circular dependencies
+# Secret rotation configuration for production environment
+resource "aws_secretsmanager_secret_rotation" "db_password" {
+  count           = var.environment == "prod" ? 1 : 0
+  secret_id       = aws_secretsmanager_secret.db_password.id
+  rotation_lambda_arn = aws_lambda_function.rotation_lambda[0].arn
+
+  rotation_rules {
+    automatically_after_days = 30
+  }
+
+  depends_on = [
+    aws_db_instance.bia,
+    aws_secretsmanager_secret_version.db_password_updated,
+    aws_lambda_function.rotation_lambda
+  ]
+}
+
+# Lambda function for secret rotation (production only)
+resource "aws_lambda_function" "rotation_lambda" {
+  count         = var.environment == "prod" ? 1 : 0
+  filename      = data.archive_file.rotation_lambda_zip[0].output_path
+  function_name = "bia-${var.environment}-secret-rotation"
+  role          = aws_iam_role.rotation_lambda_role[0].arn
+  handler       = "lambda_function.lambda_handler"
+  runtime       = "python3.9"
+  timeout       = 30
+
+  source_code_hash = data.archive_file.rotation_lambda_zip[0].output_base64sha256
+
+  environment {
+    variables = {
+      SECRETS_MANAGER_ENDPOINT = "https://secretsmanager.${data.aws_region.current.id}.amazonaws.com"
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = var.subnet_ids
+    security_group_ids = var.security_group_ids
+  }
+
+  tags = merge(var.tags, {
+    Name = "bia-${var.environment}-secret-rotation"
+  })
+}
+
+# Lambda deployment package
+data "archive_file" "rotation_lambda_zip" {
+  count       = var.environment == "prod" ? 1 : 0
+  type        = "zip"
+  output_path = "/tmp/rotation_lambda.zip"
+  
+  source {
+    content = templatefile("${path.module}/rotation_lambda.py", {
+      db_instance_identifier = aws_db_instance.bia.identifier
+    })
+    filename = "lambda_function.py"
+  }
+}
+
+# IAM role for Lambda rotation function
+resource "aws_iam_role" "rotation_lambda_role" {
+  count = var.environment == "prod" ? 1 : 0
+  name  = "bia-${var.environment}-rotation-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+# IAM policy for Lambda rotation function
+resource "aws_iam_role_policy" "rotation_lambda_policy" {
+  count = var.environment == "prod" ? 1 : 0
+  name  = "bia-${var.environment}-rotation-lambda-policy"
+  role  = aws_iam_role.rotation_lambda_role[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:UpdateSecretVersionStage"
+        ]
+        Resource = aws_secretsmanager_secret.db_password.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "rds:ModifyDBInstance",
+          "rds:DescribeDBInstances"
+        ]
+        Resource = aws_db_instance.bia.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = var.secrets_kms_key_arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Lambda permission for Secrets Manager to invoke the function
+resource "aws_lambda_permission" "allow_secrets_manager" {
+  count         = var.environment == "prod" ? 1 : 0
+  statement_id  = "AllowExecutionFromSecretsManager"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.rotation_lambda[0].function_name
+  principal     = "secretsmanager.amazonaws.com"
+}
+
+
 
 
 

@@ -43,6 +43,17 @@ variable "ecs_cluster_name" {
   default     = "bia-cluster"
 }
 
+variable "cluster_name" {
+  description = "Legacy cluster name variable (alias for ecs_cluster_name)"
+  type        = string
+  default     = "bia-cluster"
+
+  validation {
+    condition     = length(var.cluster_name) > 0
+    error_message = "Cluster name cannot be empty."
+  }
+}
+
 variable "ecs_service_name" {
   description = "Name of the ECS service"
   type        = string
@@ -136,6 +147,17 @@ variable "ec2_key_pair_name" {
   validation {
     condition     = length(var.ec2_key_pair_name) > 0
     error_message = "EC2 key pair name cannot be empty."
+  }
+}
+
+variable "key_name" {
+  description = "Legacy key name variable (alias for ec2_key_pair_name)"
+  type        = string
+  default     = "nholanda"
+
+  validation {
+    condition     = length(var.key_name) > 0
+    error_message = "Key name cannot be empty."
   }
 }
 

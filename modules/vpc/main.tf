@@ -1,6 +1,3 @@
-# VPC Module - Create VPC and subnets for multiple environments
-
-# Create VPC
 resource "aws_vpc" "main" {
   cidr_block           = var.environment == "dev" ? "172.16.48.0/20" : "172.16.0.0/20"
   enable_dns_hostnames = true
@@ -15,7 +12,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Create public subnets
 resource "aws_subnet" "public_subnet_us_east_1a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.environment == "dev" ? "172.16.48.0/27" : "172.16.0.0/27"
@@ -67,7 +63,6 @@ resource "aws_subnet" "public_subnet_us_east_1f" {
   }
 }
 
-# Create private subnets
 resource "aws_subnet" "private_subnet_us_east_1a" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = var.environment == "dev" ? "172.16.48.96/27" : "172.16.0.96/27"
@@ -116,7 +111,6 @@ resource "aws_subnet" "private_subnet_us_east_1f" {
   }
 }
 
-# Create Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -129,7 +123,6 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Route table for public subnets
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -143,7 +136,6 @@ resource "aws_route_table" "public" {
   })
 }
 
-# Route table associations for public subnets
 resource "aws_route_table_association" "public_1a" {
   subnet_id      = aws_subnet.public_subnet_us_east_1a.id
   route_table_id = aws_route_table.public.id
@@ -159,7 +151,6 @@ resource "aws_route_table_association" "public_1f" {
   route_table_id = aws_route_table.public.id
 }
 
-# NAT Gateway (only for production)
 resource "aws_eip" "nat" {
   count  = var.env_config.create_nat_gateway ? 1 : 0
   domain = "vpc"
@@ -183,11 +174,9 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# Route table for private subnets
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
-  # Add route to NAT Gateway if it exists (production only)
   dynamic "route" {
     for_each = var.env_config.create_nat_gateway ? [1] : []
     content {

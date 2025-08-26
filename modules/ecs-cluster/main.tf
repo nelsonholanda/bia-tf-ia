@@ -1,6 +1,3 @@
-# ECS Cluster Module
-
-# ECS Cluster
 resource "aws_ecs_cluster" "main" {
   name = "bia-${var.environment}-cluster"
 
@@ -16,7 +13,6 @@ resource "aws_ecs_cluster" "main" {
   }
 }
 
-# User data script for ECS instances
 locals {
   user_data = base64encode(<<-EOF
     #!/bin/sh
@@ -34,12 +30,10 @@ locals {
   )
 }
 
-# Launch Template for ECS Instances
 resource "aws_launch_template" "ecs" {
   name_prefix   = "bia-${var.environment}-launch-template-"
-  image_id      = "ami-01cbd8cecccfed7dd" # ECS-optimized AMI
+  image_id      = "ami-01cbd8cecccfed7dd"
   instance_type = var.env_config.instance_type
-  key_name      = var.key_name
 
   iam_instance_profile {
     arn = var.instance_profile_arn
@@ -66,7 +60,6 @@ resource "aws_launch_template" "ecs" {
   }
 }
 
-# Auto Scaling Group for EC2 Instances
 resource "aws_autoscaling_group" "ecs" {
   name                  = "bia-${var.environment}-asg"
   vpc_zone_identifier   = var.subnet_ids
@@ -107,7 +100,6 @@ resource "aws_autoscaling_group" "ecs" {
   }
 }
 
-# ECS Capacity Provider
 resource "aws_ecs_capacity_provider" "main" {
   name = "bia-${var.environment}-capacity-provider"
 
@@ -134,7 +126,6 @@ resource "aws_ecs_capacity_provider" "main" {
   }
 }
 
-# Associate Capacity Provider with Cluster
 resource "aws_ecs_cluster_capacity_providers" "main" {
   cluster_name = aws_ecs_cluster.main.name
 
@@ -154,7 +145,6 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
   }
 }
 
-# EC2 Instances Auto Scaling Policies
 resource "aws_autoscaling_policy" "scale_up" {
   name                   = "bia-${var.environment}-scale-up"
   scaling_adjustment     = 1
@@ -173,7 +163,6 @@ resource "aws_autoscaling_policy" "scale_down" {
   policy_type            = "SimpleScaling"
 }
 
-# CloudWatch Alarms for EC2 Instance Scaling
 resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   alarm_name          = "bia-${var.environment}-cpu-high"
   comparison_operator = "GreaterThanThreshold"

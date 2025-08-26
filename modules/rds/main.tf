@@ -1,14 +1,7 @@
-# RDS Module for BIA Application
-
-# Local values for processing RDS endpoint
 locals {
-  # Extract only the hostname from the RDS endpoint, removing port if present
   db_host = regex("^([^:]+)", aws_db_instance.bia.endpoint)[0]
 }
 
-# KMS keys are managed by the KMS module
-
-# DB Subnet Group
 resource "aws_db_subnet_group" "bia" {
   name       = "bia-${var.environment}-subnet-group"
   subnet_ids = var.subnet_ids
@@ -18,14 +11,12 @@ resource "aws_db_subnet_group" "bia" {
   })
 }
 
-# AWS Secrets Manager - Database credentials with standardized naming
 resource "aws_secretsmanager_secret" "db_password" {
   name                    = "bia-${var.environment}-secrets"
   description             = "Database credentials for BIA ${var.environment} environment"
   recovery_window_in_days = var.environment == "prod" ? 30 : 7
   kms_key_id              = var.secrets_kms_key_arn
 
-  # Force replacement if there are conflicts (helps with orphaned secrets)
   lifecycle {
     create_before_destroy = false
   }
@@ -37,18 +28,15 @@ resource "aws_secretsmanager_secret" "db_password" {
   })
 }
 
-# Generate random password for initial setup
 resource "random_password" "db_password" {
-  length  = 16
-  special = true
-  upper   = true
-  lower   = true
-  numeric = true
-  # Exclude characters that might cause issues in connection strings
+  length           = 16
+  special          = true
+  upper            = true
+  lower            = true
+  numeric          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
-# Initial secret version with generated password (will be updated after RDS creation)
 resource "aws_secretsmanager_secret_version" "db_password" {
   secret_id = aws_secretsmanager_secret.db_password.id
   secret_string = jsonencode({
@@ -65,7 +53,6 @@ resource "aws_secretsmanager_secret_version" "db_password" {
   }
 }
 
-# Update secret with actual RDS endpoint after creation
 resource "aws_secretsmanager_secret_version" "db_password_updated" {
   secret_id = aws_secretsmanager_secret.db_password.id
   secret_string = jsonencode({
@@ -80,10 +67,9 @@ resource "aws_secretsmanager_secret_version" "db_password_updated" {
   depends_on = [aws_db_instance.bia, aws_secretsmanager_secret_version.db_password]
 }
 
-# Secret rotation configuration for production environment
 resource "aws_secretsmanager_secret_rotation" "db_password" {
-  count           = var.environment == "prod" ? 1 : 0
-  secret_id       = aws_secretsmanager_secret.db_password.id
+  count               = var.environment == "prod" ? 1 : 0
+  secret_id           = aws_secretsmanager_secret.db_password.id
   rotation_lambda_arn = aws_lambda_function.rotation_lambda[0].arn
 
   rotation_rules {
@@ -97,7 +83,6 @@ resource "aws_secretsmanager_secret_rotation" "db_password" {
   ]
 }
 
-# Lambda function for secret rotation (production only)
 resource "aws_lambda_function" "rotation_lambda" {
   count         = var.environment == "prod" ? 1 : 0
   filename      = data.archive_file.rotation_lambda_zip[0].output_path
@@ -125,12 +110,11 @@ resource "aws_lambda_function" "rotation_lambda" {
   })
 }
 
-# Lambda deployment package
 data "archive_file" "rotation_lambda_zip" {
   count       = var.environment == "prod" ? 1 : 0
   type        = "zip"
   output_path = "/tmp/rotation_lambda.zip"
-  
+
   source {
     content = templatefile("${path.module}/rotation_lambda.py", {
       db_instance_identifier = aws_db_instance.bia.identifier
@@ -139,7 +123,6 @@ data "archive_file" "rotation_lambda_zip" {
   }
 }
 
-# IAM role for Lambda rotation function
 resource "aws_iam_role" "rotation_lambda_role" {
   count = var.environment == "prod" ? 1 : 0
   name  = "bia-${var.environment}-rotation-lambda-role"
@@ -160,7 +143,6 @@ resource "aws_iam_role" "rotation_lambda_role" {
   tags = var.tags
 }
 
-# IAM policy for Lambda rotation function
 resource "aws_iam_role_policy" "rotation_lambda_policy" {
   count = var.environment == "prod" ? 1 : 0
   name  = "bia-${var.environment}-rotation-lambda-policy"
@@ -217,7 +199,6 @@ resource "aws_iam_role_policy" "rotation_lambda_policy" {
   })
 }
 
-# Lambda permission for Secrets Manager to invoke the function
 resource "aws_lambda_permission" "allow_secrets_manager" {
   count         = var.environment == "prod" ? 1 : 0
   statement_id  = "AllowExecutionFromSecretsManager"
@@ -255,7 +236,6 @@ resource "aws_db_instance" "bia" {
   backup_window                = try(var.env_config.backup_window, var.backup_window)
   maintenance_window           = try(var.env_config.maintenance_window, var.maintenance_window)
 
-  # Enable automated backups
   delete_automated_backups = try(var.env_config.delete_automated_backups, true)
   copy_tags_to_snapshot    = try(var.env_config.copy_tags_to_snapshot, true)
 

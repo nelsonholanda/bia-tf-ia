@@ -1,10 +1,3 @@
-# Variables for BIA ECS Infrastructure
-# Following terraform-best-practices.com naming conventions
-
-# =============================================================================
-# GENERAL CONFIGURATION
-# =============================================================================
-
 variable "environment" {
   description = "Environment name (dev or prod)"
   type        = string
@@ -32,10 +25,6 @@ variable "project_name" {
   type        = string
   default     = "bia"
 }
-
-# =============================================================================
-# ECS CONFIGURATION
-# =============================================================================
 
 variable "ecs_cluster_name" {
   description = "Name of the ECS cluster"
@@ -65,10 +54,6 @@ variable "ecs_task_definition_family" {
   type        = string
   default     = "bia-task"
 }
-
-# =============================================================================
-# APPLICATION CONFIGURATION
-# =============================================================================
 
 variable "app_container_name" {
   description = "Name of the application container"
@@ -120,10 +105,6 @@ variable "ecr_repository_url" {
   }
 }
 
-# =============================================================================
-# MONITORING & LOGGING
-# =============================================================================
-
 variable "cloudwatch_log_group_name" {
   description = "Name of the CloudWatch log group for application logs"
   type        = string
@@ -134,10 +115,6 @@ variable "cloudwatch_log_group_name" {
     error_message = "CloudWatch log group name must start with '/' and contain valid characters."
   }
 }
-
-# =============================================================================
-# INFRASTRUCTURE ACCESS
-# =============================================================================
 
 variable "ec2_key_pair_name" {
   description = "Name of the EC2 key pair for instance access"

@@ -1,4 +1,3 @@
-# Main Terraform configuration for BIA ECS Infrastructure
 terraform {
   required_version = ">= 1.0"
   required_providers {
@@ -13,7 +12,6 @@ terraform {
   }
 
   backend "s3" {
-    # Backend configuration will be provided via -backend-config
   }
 }
 
@@ -21,20 +19,14 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Provider for cross-region backup (sa-east-1)
 provider "aws" {
   alias  = "sa_east_1"
   region = "sa-east-1"
 }
 
-# Data sources for existing resources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-# Secrets cleanup is handled by the cleanup-secrets.sh script
-# which runs before terraform apply in the deploy.sh script
-
-# KMS Module (for production encryption)
 module "kms" {
   source = "./modules/kms"
 
@@ -42,7 +34,6 @@ module "kms" {
   tags        = local.common_tags
 }
 
-# VPC Module
 module "vpc" {
   source = "./modules/vpc"
 
@@ -51,7 +42,6 @@ module "vpc" {
   env_config  = local.current_env
 }
 
-# IAM Module
 module "iam" {
   source = "./modules/iam"
 
@@ -60,7 +50,6 @@ module "iam" {
   cluster_name = var.ecs_cluster_name
 }
 
-# Security Groups Module
 module "security_groups" {
   source = "./modules/security-groups"
 
@@ -70,7 +59,6 @@ module "security_groups" {
   cluster_name = var.ecs_cluster_name
 }
 
-# CloudWatch Module
 module "cloudwatch" {
   source = "./modules/cloudwatch"
 
@@ -80,7 +68,6 @@ module "cloudwatch" {
   env_config     = local.current_env
 }
 
-# RDS Module
 module "rds" {
   source = "./modules/rds"
 
@@ -98,9 +85,6 @@ module "rds" {
   ]
 }
 
-
-
-# ALB Module
 module "alb" {
   source = "./modules/alb"
 
@@ -112,7 +96,6 @@ module "alb" {
   security_group_ids = [module.security_groups.bia_alb_sg_id]
 }
 
-# ECS Cluster Module
 module "ecs_cluster" {
   source = "./modules/ecs-cluster"
 
@@ -124,7 +107,6 @@ module "ecs_cluster" {
   subnet_ids           = module.vpc.ecs_subnet_ids
   security_group_id    = module.security_groups.ecs_security_group_id
   instance_profile_arn = module.iam.ecs_instance_profile_arn
-  key_name             = var.ec2_key_pair_name
 
   depends_on = [
     module.vpc,
@@ -133,7 +115,6 @@ module "ecs_cluster" {
   ]
 }
 
-# ECS Service Module
 module "ecs_service" {
   source = "./modules/ecs-service"
 
@@ -154,7 +135,6 @@ module "ecs_service" {
   capacity_provider_name       = module.ecs_cluster.capacity_provider_name
   target_group_arn             = module.alb.target_group_arn
 
-  # Use Secrets Manager for all database credentials
   db_password_secret_arn = module.rds.db_password_secret_arn
 
   depends_on = [
@@ -166,7 +146,6 @@ module "ecs_service" {
   ]
 }
 
-# WAF Module (for production protection)
 module "waf" {
   source = "./modules/waf"
 
@@ -177,14 +156,13 @@ module "waf" {
   depends_on = [module.alb]
 }
 
-# Backup Module (Cross-Region backup to sa-east-1)
 module "backup" {
   source = "./modules/backup"
 
   environment              = var.environment
   tags                     = local.common_tags
   backup_kms_key_arn       = module.kms.backup_kms_key_arn
-  cross_region_kms_key_arn = module.kms.backup_kms_key_arn # Use same key for cross-region
+  cross_region_kms_key_arn = module.kms.backup_kms_key_arn
   rds_instance_arns        = [module.rds.db_instance_arn]
   reports_s3_bucket        = "tf-nh"
 

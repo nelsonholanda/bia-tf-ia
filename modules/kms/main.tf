@@ -1,6 +1,3 @@
-# KMS Module for BIA Application
-
-# KMS Key for RDS encryption
 resource "aws_kms_key" "rds" {
   count                   = var.environment == "prod" ? 1 : 0
   description             = "KMS key for RDS encryption in ${var.environment} environment"
@@ -46,7 +43,6 @@ resource "aws_kms_alias" "rds" {
   target_key_id = aws_kms_key.rds[0].key_id
 }
 
-# KMS Key for Secrets Manager
 resource "aws_kms_key" "secrets" {
   count                   = var.environment == "prod" ? 1 : 0
   description             = "KMS key for Secrets Manager encryption in ${var.environment} environment"
@@ -104,7 +100,6 @@ resource "aws_kms_alias" "secrets" {
   target_key_id = aws_kms_key.secrets[0].key_id
 }
 
-# KMS Key for AWS Backup
 resource "aws_kms_key" "backup" {
   count                   = var.environment == "prod" ? 1 : 0
   description             = "KMS key for AWS Backup encryption in ${var.environment} environment"
@@ -159,5 +154,4 @@ resource "aws_kms_alias" "backup" {
   target_key_id = aws_kms_key.backup[0].key_id
 }
 
-# Data source for current AWS account
 data "aws_caller_identity" "current" {}

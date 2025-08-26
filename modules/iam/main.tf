@@ -1,6 +1,3 @@
-# IAM Module for ECS
-
-# ECS Task Execution Role
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "bia-${var.environment}-ecsTaskExecutionRole"
 
@@ -24,13 +21,11 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   }
 }
 
-# Attach AWS managed policy for ECS task execution
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# ECS Instance Role
 resource "aws_iam_role" "ecs_instance_role" {
   name = "bia-${var.environment}-ecsInstanceRole"
 
@@ -54,19 +49,16 @@ resource "aws_iam_role" "ecs_instance_role" {
   }
 }
 
-# Attach AWS managed policy for ECS instance
 resource "aws_iam_role_policy_attachment" "ecs_instance_role_policy" {
   role       = aws_iam_role.ecs_instance_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
 
-# Attach AWS managed policy for SSM (Systems Manager)
 resource "aws_iam_role_policy_attachment" "ecs_instance_ssm_policy" {
   role       = aws_iam_role.ecs_instance_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# Custom policy for Parameter Store and Secrets Manager access
 resource "aws_iam_policy" "ecs_secrets_policy" {
   name        = "bia-${var.environment}-ecs-secrets-policy"
   description = "Policy for ECS tasks to access Parameter Store and Secrets Manager"
@@ -119,13 +111,11 @@ resource "aws_iam_policy" "ecs_secrets_policy" {
   tags = var.tags
 }
 
-# Attach custom policy to ECS task execution role
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_secrets_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = aws_iam_policy.ecs_secrets_policy.arn
 }
 
-# ECS Instance Profile
 resource "aws_iam_instance_profile" "ecs_instance_profile" {
   name = "bia-${var.environment}-ecsInstanceProfile"
   role = aws_iam_role.ecs_instance_role.name

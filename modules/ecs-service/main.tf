@@ -1,6 +1,3 @@
-# ECS Service Module
-
-# Task Definition
 resource "aws_ecs_task_definition" "main" {
   family                   = "bia-${var.environment}-task"
   network_mode             = "bridge"
@@ -25,7 +22,6 @@ resource "aws_ecs_task_definition" "main" {
         }
       ]
 
-      # Use secrets from Parameter Store and Secrets Manager
       secrets = [
         {
           name      = "DB_HOST"
@@ -73,7 +69,6 @@ resource "aws_ecs_task_definition" "main" {
   }
 }
 
-# ECS Service
 resource "aws_ecs_service" "main" {
   name            = "bia-${var.environment}-service"
   cluster         = var.cluster_id
@@ -96,7 +91,6 @@ resource "aws_ecs_service" "main" {
 
   tags = var.tags
 
-  # Wait for ALB to be ready before creating service
   depends_on = [var.target_group_arn]
 
   lifecycle {
@@ -105,7 +99,6 @@ resource "aws_ecs_service" "main" {
   }
 }
 
-# ECS Tasks Auto Scaling Target
 resource "aws_appautoscaling_target" "ecs_tasks_target" {
   max_capacity       = var.env_config.task_max_capacity
   min_capacity       = var.env_config.task_min_capacity
@@ -121,7 +114,6 @@ resource "aws_appautoscaling_target" "ecs_tasks_target" {
   }
 }
 
-# ECS Tasks Auto Scaling Policy - CPU Utilization
 resource "aws_appautoscaling_policy" "ecs_cpu_policy" {
   name               = "bia-${var.environment}-cpu-autoscaling"
   policy_type        = "TargetTrackingScaling"

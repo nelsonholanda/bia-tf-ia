@@ -1,10 +1,6 @@
-# WAF Module for BIA Application (Production only)
-
-# Data sources for ARN construction
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-# WAF Web ACL
 resource "aws_wafv2_web_acl" "main" {
   count = var.environment == "prod" ? 1 : 0
   name  = "bia-${var.environment}-waf"
@@ -14,7 +10,6 @@ resource "aws_wafv2_web_acl" "main" {
     allow {}
   }
 
-  # AWS Managed Rule - Common Rule Set
   rule {
     name     = "AWSManagedRulesCommonRuleSet"
     priority = 1
@@ -37,7 +32,6 @@ resource "aws_wafv2_web_acl" "main" {
     }
   }
 
-  # AWS Managed Rule - Known Bad Inputs
   rule {
     name     = "AWSManagedRulesKnownBadInputsRuleSet"
     priority = 2
@@ -60,7 +54,6 @@ resource "aws_wafv2_web_acl" "main" {
     }
   }
 
-  # Rate limiting rule
   rule {
     name     = "RateLimitRule"
     priority = 3
@@ -83,7 +76,6 @@ resource "aws_wafv2_web_acl" "main" {
     }
   }
 
-  # Geo blocking rule (optional - block specific countries)
   rule {
     name     = "GeoBlockRule"
     priority = 4
@@ -94,7 +86,7 @@ resource "aws_wafv2_web_acl" "main" {
 
     statement {
       geo_match_statement {
-        country_codes = ["CN", "RU", "KP"] # Block China, Russia, North Korea
+        country_codes = ["CN", "RU", "KP"]
       }
     }
 
@@ -116,14 +108,12 @@ resource "aws_wafv2_web_acl" "main" {
   })
 }
 
-# WAF Association with ALB
 resource "aws_wafv2_web_acl_association" "main" {
   count        = var.environment == "prod" ? 1 : 0
   resource_arn = var.alb_arn
   web_acl_arn  = aws_wafv2_web_acl.main[0].arn
 }
 
-# CloudWatch Log Group for WAF (for future logging implementation)
 resource "aws_cloudwatch_log_group" "waf_logs" {
   count             = var.environment == "prod" ? 1 : 0
   name              = "aws-waf-logs-bia-${var.environment}"
@@ -133,6 +123,3 @@ resource "aws_cloudwatch_log_group" "waf_logs" {
     Name = "aws-waf-logs-bia-${var.environment}"
   })
 }
-
-# Note: WAF Logging Configuration is temporarily disabled due to ARN format issues
-# It can be enabled later once the correct ARN format is determined

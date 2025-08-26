@@ -38,8 +38,3 @@ variable "instance_profile_arn" {
   description = "IAM instance profile ARN"
   type        = string
 }
-
-variable "key_name" {
-  description = "EC2 Key Pair name"
-  type        = string
-}

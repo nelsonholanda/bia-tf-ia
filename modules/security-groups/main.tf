@@ -1,6 +1,3 @@
-# Security Groups Module
-
-# Security Group for ECS Service (alias for dev environment)
 resource "aws_security_group" "bia_dev" {
   name        = "bia-${var.environment}-ecs-service"
   description = "Security group for BIA ECS service in ${var.environment} environment"
@@ -15,12 +12,11 @@ resource "aws_security_group" "bia_dev" {
   }
 
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-ecs-service"
+    Name    = "bia-${var.environment}-ecs-service"
     Purpose = "ecs-service"
   })
 }
 
-# Security Group for RDS Database
 resource "aws_security_group" "bia_rds" {
   name        = "bia-${var.environment}-rds-database"
   description = "Security group for BIA RDS PostgreSQL database in ${var.environment} environment"
@@ -33,15 +29,13 @@ resource "aws_security_group" "bia_rds" {
     protocol        = "tcp"
     security_groups = [aws_security_group.bia_ec2.id]
   }
-  
-  # RDS doesn't need outbound access - no egress rules
+
   tags = merge(var.tags, {
-    Name = "bia-${var.environment}-rds-database"
+    Name    = "bia-${var.environment}-rds-database"
     Purpose = "rds-database"
   })
 }
 
-# Security Group for Application Load Balancer
 resource "aws_security_group" "bia_alb" {
   name        = "bia-${var.environment}-alb-load-balancer"
   description = "Security group for BIA Application Load Balancer in ${var.environment} environment"
@@ -76,7 +70,6 @@ resource "aws_security_group" "bia_alb" {
   })
 }
 
-# Security Group for EC2 instances
 resource "aws_security_group" "bia_ec2" {
   name        = "bia-${var.environment}-ec2"
   description = "Security group for BIA EC2 instances in ${var.environment}"

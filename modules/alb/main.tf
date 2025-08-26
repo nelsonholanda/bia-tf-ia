@@ -1,6 +1,3 @@
-# ALB Module
-
-# Application Load Balancer
 resource "aws_lb" "bia_alb" {
   name               = "bia-${var.environment}-alb"
   internal           = false
@@ -15,7 +12,6 @@ resource "aws_lb" "bia_alb" {
   })
 }
 
-# Target Group
 resource "aws_lb_target_group" "bia_tg" {
   name     = "bia-${var.environment}-tg"
   port     = 8080
@@ -39,7 +35,6 @@ resource "aws_lb_target_group" "bia_tg" {
   })
 }
 
-# ALB Listener
 resource "aws_lb_listener" "bia_listener" {
   load_balancer_arn = aws_lb.bia_alb.arn
   port              = "80"
